@@ -6,7 +6,7 @@ import { DecryptInputs, EncryptInputs } from "./components/Inputs.tsx";
 import { Masthead } from "./components/Masthead.tsx";
 import { Output } from "./components/Output.tsx";
 import { Player } from "./components/Player.tsx";
-import { PointerLabel } from "./components/PointerLabel.tsx";
+import { TargetCursor } from "./components/TargetCursor.tsx";
 import { TitleBlock } from "./components/TitleBlock.tsx";
 
 // Space plays or pauses, the arrows step, Home and End jump. Typing in a field is left alone.
@@ -76,7 +76,7 @@ export function App() {
         </main>
         <TitleBlock mode={mode} />
       </div>
-      <PointerLabel />
+      <TargetCursor />
     </>
   );
 }

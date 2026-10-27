@@ -923,24 +923,112 @@ figcaption b {
   grid-area: mode;
 }
 
-/* ---------- Pointer label (see PointerLabel.tsx) ---------- */
+/* ---------- Target cursor (see TargetCursor.tsx) ---------- */
 
-.pointer-label {
+html.target-cursor,
+html.target-cursor * {
+  cursor: none;
+}
+
+html.target-cursor :is(input:not([type="range"]), textarea) {
+  cursor: text;
+}
+
+.reticle {
   position: fixed;
   top: 0;
   left: 0;
-  z-index: 200;
+  z-index: 300;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s, width 0.18s var(--ease), height 0.18s var(--ease);
+}
+
+.reticle.on {
+  opacity: 1;
+}
+
+/* Only snapping onto a target is eased; following the pointer never lags. */
+.reticle.locked {
+  transition: opacity 0.15s, width 0.18s var(--ease), height 0.18s var(--ease), transform 0.18s var(--ease);
+}
+
+.reticle-corners {
+  position: absolute;
+  inset: 0;
+}
+
+.reticle-corners i {
+  position: absolute;
+  width: 7px;
+  height: 7px;
+  border: 2px solid var(--line);
+}
+
+.reticle-corners i:nth-child(1) {
+  top: 0;
+  left: 0;
+  border-right: 0;
+  border-bottom: 0;
+}
+
+.reticle-corners i:nth-child(2) {
+  top: 0;
+  right: 0;
+  border-bottom: 0;
+  border-left: 0;
+}
+
+.reticle-corners i:nth-child(3) {
+  right: 0;
+  bottom: 0;
+  border-top: 0;
+  border-left: 0;
+}
+
+.reticle-corners i:nth-child(4) {
+  bottom: 0;
+  left: 0;
+  border-top: 0;
+  border-right: 0;
+}
+
+.reticle-dot {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 4px;
+  height: 4px;
+  margin: -2px 0 0 -2px;
+  border-radius: 50%;
+  background: var(--line);
+  transition: opacity 0.15s;
+}
+
+.reticle.locked .reticle-dot {
+  opacity: 0;
+}
+
+.reticle-label {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
   padding: 2px 7px;
   background: var(--line);
   font: 400 11px/1.45 var(--mono);
   color: var(--sheet);
   white-space: nowrap;
   opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.18s;
+  transition: opacity 0.15s;
 }
 
-.pointer-label.on {
+/* Near the right edge the label hangs to the left instead. */
+.reticle.flip .reticle-label {
+  right: 0;
+  left: auto;
+}
+
+.reticle.labelled .reticle-label {
   opacity: 1;
 }
 
