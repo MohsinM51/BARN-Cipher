@@ -1,7 +1,7 @@
 /*
  * Step animations. React renders the finished state of every step; these only
  * decorate the change from one step to the next: the head counting out a
- * skip, a bit flying between figures, ink pressed into a cell. Stopping one
+ * skip, a bit flying between figures, a cell being filled in. Stopping one
  * halfway therefore can't leave anything stale on screen.
  */
 import { useEffect, useLayoutEffect, useRef, type RefObject } from "react";
@@ -59,7 +59,7 @@ function placeAt(scene: Scene, el: HTMLElement, dy = 0) {
   return `translate(${x}px, ${y + dy}px)`;
 }
 
-// The head counts out the skip one cell at a time, with pencil numerals, then rests on its target.
+// The head counts out the skip one cell at a time, numbering each, then rests on its target.
 function walk(scene: Scene, hop: Hop, duration: number) {
   const from = hop.from - 1; // 0-based; -1 is "before the stream"
   const target = cellEl(scene, hop.to - 1);
@@ -79,7 +79,7 @@ function walk(scene: Scene, hop: Hop, duration: number) {
   for (let c = 1; c <= hop.skip; c++) {
     const cell = cellEl(scene, from + c);
     const mark = overlay(scene, "count-mark", String(c)); // invisible until its turn (see .count-mark)
-    mark.style.transform = placeAt(scene, cell, -17);
+    mark.style.transform = placeAt(scene, cell, -12); // under the dimension line, just above the cell
     animate(scene, mark, [{ opacity: 0 }, { opacity: 1, offset: 0.2 }, { opacity: 0 }], {
       duration: scene.ms(560),
       delay: (c / hop.skip) * duration * LAND,
@@ -111,7 +111,7 @@ function fly(scene: Scene, from: HTMLElement, to: HTMLElement, text: string, dur
   )!.onfinish = () => ghost.remove();
 }
 
-// Ink pressed into place: the digit lands large and soft, then settles.
+// A digit pressed into place: it lands large and soft, then settles.
 function stamp(scene: Scene, el: Element | null, delay: number, duration = scene.ms(300)) {
   animate(
     scene,
@@ -125,13 +125,36 @@ function stamp(scene: Scene, el: Element | null, delay: number, duration = scene
   );
 }
 
-// The paper soaks up a little ink around a freshly written cell.
-function soak(scene: Scene, cell: HTMLElement, delay: number) {
-  animate(scene, cell, [{ backgroundColor: cssVar("--soak") }, { backgroundColor: cssVar("--paper") }], {
-    duration: scene.ms(700),
+// A freshly filled cell flashes drafting yellow, then settles to white.
+function flash(scene: Scene, cell: HTMLElement, delay: number) {
+  animate(scene, cell, [{ backgroundColor: cssVar("--accent") }, { backgroundColor: cssVar("--line") }], {
+    duration: scene.ms(650),
     delay,
     easing: "ease-out",
   });
+}
+
+// The current skip's dimension line draws itself as the head walks (piece by
+// piece if it crosses rows); its extension line, arrowhead and value appear as
+// the head lands, so they don't give the target away early.
+function drawDimension(scene: Scene, duration: number) {
+  const lines = [...scene.stream.querySelectorAll<SVGLineElement>(".dim.current .dim-line")];
+  const lengths = lines.map((line) => line.getTotalLength());
+  const total = lengths.reduce((sum, length) => sum + length, 0);
+  let drawn = 0;
+  lines.forEach((line, k) => {
+    const length = lengths[k];
+    const dash = `${length}`;
+    animate(scene, line, [{ strokeDasharray: dash, strokeDashoffset: length }, { strokeDasharray: dash, strokeDashoffset: 0 }], {
+      duration: total ? (duration * length) / total : 0,
+      delay: total ? (duration * drawn) / total : 0,
+      fill: "backwards",
+    });
+    drawn += length;
+  });
+  for (const part of scene.stream.querySelectorAll(".dim.current :is(.dim-ext, .dim-arrow, .dim-label)")) {
+    animate(scene, part, [{ opacity: 0 }, { opacity: 1 }], { duration: scene.ms(160), delay: duration, fill: "backwards" });
+  }
 }
 
 function fadeIn(scene: Scene, el: Element | null, delay: number, duration = scene.ms(220)) {
@@ -163,18 +186,21 @@ function forward(scene: Scene, run: Run, frame: Frame) {
   const walkMs = scene.ms(Math.min(Math.max(hop.skip * 90, 300), 560));
   const land = walkMs * LAND;
   walk(scene, hop, walkMs);
-  fadeIn(scene, target.querySelector(".skip"), land);
-  soak(scene, target, land);
+  drawDimension(scene, land);
+  flash(scene, target, land);
+
+  // Until the head arrives the cell keeps its old, unfilled look.
+  const old = run.mode === "encrypt" ? run.random[hop.to - 1] : run.cipher[hop.to - 1];
+  const was = overlay(scene, "was", String(old));
+  was.style.transform = placeAt(scene, target);
+  animate(scene, was, [{ opacity: 1 }, { opacity: 1, offset: 0.92 }, { opacity: 0 }], {
+    duration: land + scene.ms(60),
+    fill: "forwards",
+  })!.onfinish = () => was.remove();
 
   if (run.mode === "encrypt") {
-    // The message bit flies down; the old random bit shows until it's pressed over.
+    // The message bit flies down and is stamped over the random bit.
     fly(scene, bitEl(scene, hop.j), target, String(run.bits[hop.j]), land);
-    const was = overlay(scene, "was", String(run.random[hop.to - 1]));
-    was.style.transform = placeAt(scene, target);
-    animate(scene, was, [{ opacity: 1 }, { opacity: 1, offset: 0.92 }, { opacity: 0 }], {
-      duration: land + scene.ms(60),
-      fill: "forwards",
-    })!.onfinish = () => was.remove();
     stamp(scene, target.querySelector(".d"), land);
     return;
   }
@@ -183,8 +209,6 @@ function forward(scene: Scene, run: Run, frame: Frame) {
   // byte or character it completes is stamped in.
   const slot = bitEl(scene, hop.j);
   const flight = scene.ms(340);
-  const ink = cssVar("--ink-2");
-  animate(scene, target.querySelector(".d"), [{ color: ink }, { color: ink }], { duration: land });
   fly(scene, target, slot, String(run.bits[hop.j]), flight, land);
   stamp(scene, slot.querySelector(".d"), land + flight);
   const after = land + flight + scene.ms(120);
