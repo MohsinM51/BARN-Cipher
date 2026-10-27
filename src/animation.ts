@@ -78,13 +78,12 @@ function walk(scene: Scene, hop: Hop, duration: number) {
   if (hop.skip > 16) return;
   for (let c = 1; c <= hop.skip; c++) {
     const cell = cellEl(scene, from + c);
-    const mark = overlay(scene, "count-mark", String(c));
+    const mark = overlay(scene, "count-mark", String(c)); // invisible until its turn (see .count-mark)
     mark.style.transform = placeAt(scene, cell, -17);
     animate(scene, mark, [{ opacity: 0 }, { opacity: 1, offset: 0.2 }, { opacity: 0 }], {
       duration: scene.ms(560),
       delay: (c / hop.skip) * duration * LAND,
-      fill: "backwards",
-    });
+    })!.onfinish = () => mark.remove();
   }
 }
 
@@ -142,12 +141,16 @@ function fadeIn(scene: Scene, el: Element | null, delay: number, duration = scen
 // Encrypting: random bits print in all over the stream (step 0 → 1).
 function printStream(scene: Scene) {
   const { stream } = scene;
-  stream.style.setProperty("--k", String(scene.ms(1)));
+  const done = () => {
+    stream.classList.remove("printing");
+    stream.style.removeProperty("--k");
+  };
+  stream.style.setProperty("--k", String(scene.ms(1))); // scales the CSS delays and durations
   stream.classList.add("printing");
-  const timer = setTimeout(() => stream.classList.remove("printing"), scene.ms(950));
+  const timer = setTimeout(done, scene.ms(1100));
   scene.cleanups.push(() => {
     clearTimeout(timer);
-    stream.classList.remove("printing");
+    done();
   });
 }
 
@@ -168,7 +171,10 @@ function forward(scene: Scene, run: Run, frame: Frame) {
     fly(scene, bitEl(scene, hop.j), target, String(run.bits[hop.j]), land);
     const was = overlay(scene, "was", String(run.random[hop.to - 1]));
     was.style.transform = placeAt(scene, target);
-    animate(scene, was, [{ opacity: 1 }, { opacity: 1, offset: 0.92 }, { opacity: 0 }], { duration: land + scene.ms(60), fill: "forwards" });
+    animate(scene, was, [{ opacity: 1 }, { opacity: 1, offset: 0.92 }, { opacity: 0 }], {
+      duration: land + scene.ms(60),
+      fill: "forwards",
+    })!.onfinish = () => was.remove();
     stamp(scene, target.querySelector(".d"), land);
     return;
   }
@@ -228,7 +234,13 @@ export function useStepAnimation(
     };
     if (frame.step === before.step + 1) forward(scene, run, frame);
     else if (frame.step === before.step - 1) backward(scene, run, frameAt(run, before.step));
-    return () => stop(scene);
+    // Resizing can rebuild the rows mid-step; drop the decorations and show the finished state.
+    const halt = () => stop(scene);
+    addEventListener("resize", halt);
+    return () => {
+      removeEventListener("resize", halt);
+      stop(scene);
+    };
   }, [run, frame.step]);
 
   // Keep the head in view as it moves.

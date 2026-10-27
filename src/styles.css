@@ -551,6 +551,7 @@ figcaption b {
 }
 
 .count-mark {
+  opacity: 0; /* shown only while its animation runs */
   font: italic 400 13px/1 var(--serif);
   text-align: center;
   color: var(--muted);
@@ -573,7 +574,7 @@ figcaption b {
 /* The random stream prints in byte by byte, each unpacking its bits left to right. */
 .stream.printing .d,
 .stream.printing .octet-hex {
-  animation: print-in 0.26s calc(var(--d) * var(--k, 1)) both;
+  animation: print-in calc(0.26s * var(--k, 1)) calc(var(--d) * var(--k, 1)) both;
 }
 
 @keyframes print-in {

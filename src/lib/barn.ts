@@ -83,6 +83,9 @@ export interface EncodedChar {
   bytes: number[];
 }
 
+// UTF-8 size without building the bit array (cheap even for huge pasted text).
+export const byteLength = (text: string) => encoder.encode(text).length;
+
 // Keeps the per-character split so the UI can show which bytes form which character.
 export function encodeText(text: string) {
   const chars: EncodedChar[] = [];

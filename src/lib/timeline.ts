@@ -69,7 +69,8 @@ export interface Segment {
 const SUBSCRIPT = "₀₁₂₃₄₅₆₇₈₉";
 export const sub = (n: number) => String(n).replace(/\d/g, (d) => SUBSCRIPT[Number(d)]);
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
-export const keyText = (key: Key) => `{${key.join(", ")}}`;
+// {1, 3, 2, 1}; long keys are shortened so the narration stays readable.
+export const keyText = (key: Key, max = 12) => `{${key.slice(0, max).join(", ")}${key.length > max ? ", …" : ""}}`;
 export const hex = (byte: number) => "0x" + byte.toString(16).toUpperCase().padStart(2, "0");
 
 // Control characters become their visible "control picture" symbols (␀, ␉, ␊ …).

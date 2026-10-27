@@ -1,6 +1,7 @@
 import { Fragment, type ReactNode } from "react";
-import { encodeText, generateKey, KEY_BASES, type KeyBase } from "../lib/barn.ts";
-import { MAX_TEXT_BYTES, type Cipher } from "../useCipher.ts";
+import { byteLength, generateKey, KEY_BASES, type KeyBase } from "../lib/barn.ts";
+import { MAX_TEXT_BYTES } from "../lib/player.ts";
+import type { Cipher } from "../useCipher.ts";
 
 const BASE_NAMES: Record<KeyBase, string> = {
   ternary: "ternary",
@@ -49,7 +50,7 @@ const fieldProps = (id: string, error?: string, hint = false) => ({
 
 export function EncryptInputs({ cipher }: { cipher: Cipher }) {
   const { fields, errors, edit, start } = cipher;
-  const size = encodeText(fields.text).bytes.length;
+  const size = byteLength(fields.text);
   const drawKey = (
     <>
       or draw one from 32 random bits:{" "}
