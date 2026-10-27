@@ -6,6 +6,8 @@ then dig them back out with the key. The page is drawn as a blueprint: the
 stream is a figure on an engineering drawing, and every skip is a dimension
 line.
 
+![Encrypting "BARN" with K = {1, 3, 2, 1}, nineteen bits in: filled cells in the random stream carry message bits, each skip is a dimension line, and the yellow head marks the bit just buried.](docs/screenshots/encrypt.png)
+
 ## Credit
 
 BARN is the work of **Jan J. Tatarkiewicz and Wiesław B. Kuźmicz** (RANDAEMON
@@ -114,12 +116,16 @@ The skip is drawn above the row as a dimension line, as on an engineering
 drawing: from the previous buried bit to this one, labelled with its length.
 A skip that runs past the end of a row carries on at the start of the next.
 
+![Close-up of Fig. 3. Dimension lines chain from one buried bit to the next, the skip in progress is yellow, and the pointer's reticle names the cell it's on: P₁₈ = M₁₀ · K₂ = 3.](docs/screenshots/detail.png)
+
 **Decrypt.** The Decrypt tab picks up the latest cipher and key, or you can
 paste your own. The message length doesn't need to be entered: the cipher ends
 exactly on the last buried bit, so the key alone determines how many bits it
 holds. Try a different key to see what a wrong guess produces, as in the
 paper's Fig. 4. The page flags keys that don't fit the cipher or don't give
 whole bytes.
+
+![Decrypting with the same key, twenty bits in: the read bits fill the message from the left, and "BA" is recovered so far.](docs/screenshots/decrypt.png)
 
 **Reading the drawing.** Filled cells carry the message. Drafting yellow
 marks only the head: the cell being written or read, the skip in use, and the
@@ -132,6 +138,8 @@ with a mark for each phase and byte, and the narration. Hover the scrubber to
 see what each step does. Point at any bit and the pointer's label names it,
 for example `P₁₄ = M₈ · K₄ = 1`, while its partner in the other figure lights
 up.
+
+<img src="docs/screenshots/phone.png" width="320" alt="On a phone the stream wraps to one byte per row, and a skip that crosses a row break carries on at the start of the next row.">
 
 | Key       | Action                 |
 | --------- | ---------------------- |
@@ -150,6 +158,7 @@ reduced motion.
 
 ```
 index.html                Vite entry point
+docs/screenshots/         The images in this README
 src/
   lib/barn.ts             The cipher: Algorithm 1, Eq. (1), parsing, UTF-8, keys (Sec. 3)
   lib/timeline.ts         Splits an encryption or decryption into steps; narration

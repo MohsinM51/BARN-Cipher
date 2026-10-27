@@ -294,7 +294,7 @@ button {
   text-decoration-color: var(--accent);
 }
 
-/* ---------- Stage: figures beside the step card ---------- */
+/* ---------- Stage: figures beside the step card, the result under both ---------- */
 
 .stage {
   display: grid;
@@ -304,7 +304,8 @@ button {
   animation: rise 0.35s var(--ease) both;
 }
 
-/* The step card sits in the margin like a note on the drawing, and stays in view. */
+/* The step card sits in the margin like a note on the drawing, and stays in view
+   while the figures scroll by. */
 .stage-side {
   position: sticky;
   top: 24px;
@@ -646,7 +647,9 @@ figcaption b {
 
 /* ---------- Output ---------- */
 
+/* Full width, like the rows above it, so its rule and buttons reach the right edge. */
 .output {
+  grid-column: 1 / -1;
   display: grid;
   grid-template-columns: 110px minmax(0, 1fr) auto;
   align-items: baseline;
