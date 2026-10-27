@@ -1,0 +1,810 @@
+/* BARN visualiser: a page styled like a figure from the paper. */
+
+:root {
+  --paper: #f3efe6;
+  --paper-2: #e9e4d8;
+  --ink: #1b1a17;
+  --ink-2: #47443e;
+  --muted: #7a766c;
+  --rule: #d5cfc2;
+  --rule-2: #b4ac9b;
+  --blue: #1d3fd6;
+  --soak: #c6cbe9; /* blue ink soaked into paper (opaque, so cell rules don't show through) */
+  --wash: #dfe0ea; /* a lighter tint for linked bits */
+  --red: #b3341f;
+
+  --serif: "Newsreader", "Iowan Old Style", Georgia, serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  --cell: 28px; /* stream cells */
+  --mcell: 22px; /* message cells */
+  --player-h: 150px; /* kept in sync by Player.tsx */
+
+  /* Film grain: fractal noise, desaturated. */
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--paper);
+}
+
+body {
+  margin: 0;
+  color: var(--ink);
+  font: 400 17px/1.55 var(--serif);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Grain sits over everything, ink included, so the whole page reads as printed. */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  pointer-events: none;
+  background-image: var(--grain);
+  opacity: 0.16;
+  mix-blend-mode: multiply;
+}
+
+a {
+  color: inherit;
+  text-decoration-color: var(--rule-2);
+  text-underline-offset: 3px;
+}
+
+a:hover {
+  color: var(--blue);
+  text-decoration-color: currentColor;
+}
+
+:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.page {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0 32px;
+}
+
+/* ---------- Masthead ---------- */
+
+.masthead {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 32px;
+  padding: 44px 0 18px;
+  border-bottom: 1px solid var(--ink);
+}
+
+.masthead h1 {
+  margin: 0;
+  font: 500 46px/1 var(--serif);
+  letter-spacing: -0.01em;
+}
+
+.masthead h1 span {
+  margin-left: 10px;
+  font: italic 400 22px/1 var(--serif);
+  letter-spacing: 0;
+  color: var(--ink-2);
+}
+
+.byline {
+  max-width: 62ch;
+  margin: 12px 0 0;
+  font-size: 15px;
+  line-height: 1.45;
+  color: var(--ink-2);
+}
+
+.modes {
+  display: flex;
+  gap: 22px;
+}
+
+.modes button {
+  padding: 4px 0;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  font: 500 14px var(--mono);
+  color: var(--muted);
+}
+
+.modes button:hover {
+  color: var(--ink);
+}
+
+.modes button[aria-pressed="true"] {
+  border-bottom-color: var(--blue);
+  color: var(--ink);
+}
+
+/* ---------- Inputs ---------- */
+
+.inputs {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 32px;
+  padding: 26px 0 6px;
+}
+
+.inputs > .btn {
+  margin-top: 26px;
+}
+
+.label {
+  display: block;
+  font: 500 12px var(--mono);
+  color: var(--muted);
+}
+
+.meta {
+  margin-left: 6px;
+  font-weight: 400;
+}
+
+.text-input,
+.key-input,
+.bits-input {
+  display: block;
+  width: 100%;
+  margin-top: 4px;
+  padding: 4px 0 6px;
+  border: 0;
+  border-bottom: 1px solid var(--ink);
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink);
+}
+
+.text-input {
+  font: 400 28px/1.25 var(--serif);
+}
+
+.key-input {
+  font: 400 19px/1.6 var(--mono);
+}
+
+.bits-input {
+  font: 400 14px/1.55 var(--mono);
+  resize: vertical;
+  word-break: break-all;
+}
+
+.text-input:focus,
+.key-input:focus,
+.bits-input:focus {
+  outline: none;
+  border-bottom-color: var(--blue);
+  box-shadow: 0 1px 0 var(--blue);
+}
+
+[aria-invalid="true"] {
+  border-bottom-color: var(--red);
+}
+
+.hint,
+.error {
+  margin: 6px 0 0;
+  font: 400 12px/1.5 var(--mono);
+}
+
+.hint {
+  color: var(--muted);
+}
+
+.error {
+  color: var(--red);
+}
+
+.error:empty {
+  display: none;
+}
+
+.btn {
+  padding: 10px 20px;
+  border: 1px solid var(--ink);
+  border-radius: 0;
+  background: transparent;
+  font: 500 13px var(--mono);
+  white-space: nowrap;
+}
+
+.btn:hover {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.btn.primary {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.btn.primary:hover {
+  border-color: var(--blue);
+  background: var(--blue);
+}
+
+.link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--blue);
+  text-decoration: underline;
+  text-decoration-color: rgba(29, 63, 214, 0.35);
+  text-underline-offset: 3px;
+}
+
+.link:hover {
+  text-decoration-color: currentColor;
+}
+
+/* ---------- Figures ---------- */
+
+.figure {
+  transition: opacity 0.2s;
+}
+
+/* The fields have an error, so what's drawn is the last valid input. */
+.figure.stale {
+  opacity: 0.35;
+}
+
+.fig {
+  margin: 30px 0 0;
+}
+
+figcaption {
+  max-width: 82ch;
+  margin-top: 12px;
+  font-size: 14.5px;
+  line-height: 1.45;
+  color: var(--ink-2);
+}
+
+figcaption b {
+  font-weight: 500;
+  color: var(--ink);
+}
+
+/* Bits are drawn as table cells: a 1px gap over a rule-coloured background. */
+.octet {
+  display: grid;
+  grid-auto-flow: column;
+  gap: 1px;
+  border: 1px solid var(--rule);
+  background: var(--rule);
+}
+
+/* Fig. 1: the message, grouped by character and byte. */
+.message {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px 14px;
+}
+
+.seg {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.glyph {
+  height: 30px;
+  font: 400 26px/30px var(--serif);
+}
+
+.seg-bytes {
+  display: flex;
+  gap: 4px;
+}
+
+.byte {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+
+.mbit {
+  display: grid;
+  place-items: center;
+  width: var(--mcell);
+  height: var(--mcell);
+  background: var(--paper);
+  font: 400 13px var(--mono);
+  scroll-margin: 80px 0 calc(var(--player-h) + 16px);
+  transition: color 0.25s, background-color 0.25s;
+}
+
+.mbit.used {
+  background: var(--paper-2);
+  color: var(--muted);
+}
+
+.mbit.linked {
+  background: var(--wash);
+}
+
+.mbit.current {
+  background: var(--blue);
+  color: var(--paper);
+}
+
+.hex {
+  height: 14px;
+  font: 400 11px/14px var(--mono);
+  color: var(--muted);
+}
+
+/* Fig. 2: the key. */
+.key {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  font: 400 20px var(--mono);
+}
+
+.key .brace,
+.key .sep {
+  color: var(--muted);
+}
+
+.key .sep {
+  margin-right: 0.6ch;
+}
+
+.key .k {
+  padding: 0 2px 3px;
+  border-bottom: 2px solid transparent;
+  color: var(--ink-2);
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.key .k.current {
+  border-bottom-color: var(--blue);
+  color: var(--blue);
+}
+
+/* Fig. 3: the stream or cipher, wrapped into rows of whole octets. */
+.stream {
+  position: relative;
+}
+
+.row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 24px;
+}
+
+.offset {
+  flex: none;
+  width: 3.4em;
+  font: 400 11px/var(--cell) var(--mono);
+  text-align: right;
+  color: var(--muted);
+}
+
+.cells {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.cell {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: var(--cell);
+  height: var(--cell);
+  background: var(--paper);
+  font: 400 14px var(--mono);
+  color: var(--ink-2);
+  scroll-margin: 80px 0 calc(var(--player-h) + 16px);
+}
+
+.cell.marked {
+  color: var(--blue);
+  font-weight: 500;
+}
+
+.cell.linked {
+  background: var(--wash);
+}
+
+/* The read/write head. */
+.cell.current {
+  z-index: 1;
+  box-shadow: 0 0 0 2px var(--blue);
+}
+
+/* The skip that reached a buried (or read) bit, under the cell, as in the paper's Fig. 3. */
+.skip {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  font: 500 11px/1 var(--mono);
+  text-align: center;
+  color: var(--blue);
+}
+
+/* Animation overlays (see animation.ts). */
+.fx {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.walker,
+.was,
+.count-mark {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: var(--cell);
+}
+
+.walker {
+  height: var(--cell);
+  box-shadow: 0 0 0 2px var(--blue);
+}
+
+.was {
+  display: grid;
+  place-items: center;
+  height: var(--cell);
+  background: var(--paper);
+  font: 400 14px var(--mono);
+  color: var(--ink-2);
+}
+
+.count-mark {
+  font: italic 400 13px/1 var(--serif);
+  text-align: center;
+  color: var(--muted);
+}
+
+.ghost {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  font: 500 15px var(--mono);
+  color: var(--blue);
+  pointer-events: none;
+}
+
+/* The random stream prints in, cell by cell, in a scattered order. */
+.stream.printing .d {
+  animation: print-in 0.3s calc(var(--d) * var(--k, 1)) both;
+}
+
+@keyframes print-in {
+  from {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+}
+
+/* ---------- Output ---------- */
+
+.output {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 8px 24px;
+  margin-top: 36px;
+  padding: 16px 0 28px;
+  border-top: 1px solid var(--ink);
+}
+
+.output-body {
+  min-width: 0;
+  color: var(--ink-2);
+}
+
+.output-body p {
+  margin: 0;
+}
+
+.output-body .bits {
+  font: 400 14px/1.6 var(--mono);
+  color: var(--ink);
+  word-break: break-all;
+}
+
+.output-body .plain {
+  font: 400 30px/1.25 var(--serif);
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.output-body .pending {
+  color: var(--muted);
+}
+
+.output-body .note {
+  margin-top: 6px;
+  font: 400 12px/1.5 var(--mono);
+  color: var(--red);
+}
+
+.output-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.reveal {
+  animation: print-in 0.4s both;
+}
+
+/* ---------- Player ---------- */
+
+.player {
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+  border-top: 1px solid var(--ink);
+  background: var(--paper);
+}
+
+.player-inner {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 12px 32px 14px;
+}
+
+.narration {
+  min-height: 4.4em;
+}
+
+.narration h2 {
+  margin: 0 0 2px;
+  font: 500 12px var(--mono);
+  color: var(--blue);
+}
+
+.narration p {
+  max-width: 92ch;
+  margin: 0;
+  font-size: 17px;
+  line-height: 1.45;
+}
+
+.transport {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.transport button {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 1px solid var(--ink);
+  border-radius: 0;
+  background: var(--paper);
+}
+
+.transport button:hover:not(:disabled) {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.transport button:disabled {
+  border-color: var(--rule-2);
+  color: var(--rule-2);
+  cursor: default;
+}
+
+.transport svg {
+  width: 14px;
+  height: 14px;
+  fill: currentColor;
+}
+
+.transport .play {
+  width: 46px;
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.transport .play:hover:not(:disabled) {
+  border-color: var(--blue);
+  background: var(--blue);
+}
+
+.transport .speed {
+  width: 46px;
+  font: 500 12px var(--mono);
+}
+
+.counter {
+  min-width: 8ch;
+  font: 400 12px var(--mono);
+  text-align: right;
+  color: var(--muted);
+}
+
+/* Scrubber: a hairline with phase and byte ticks; the thumb is a small square. */
+.scrub {
+  position: relative;
+  flex: 1;
+  min-width: 80px;
+  margin: 0 10px;
+}
+
+.ticks {
+  position: absolute;
+  inset: 0 6px;
+  pointer-events: none;
+}
+
+.tick {
+  position: absolute;
+  top: 50%;
+  width: 1px;
+  height: 7px;
+  background: var(--rule-2);
+  transform: translate(-50%, -50%);
+}
+
+.tick.phase {
+  height: 15px;
+  background: var(--ink);
+}
+
+.scrub input {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 26px;
+  margin: 0;
+  background: transparent;
+  -webkit-appearance: none;
+  appearance: none;
+  cursor: pointer;
+}
+
+.scrub input::-webkit-slider-runnable-track {
+  height: 2px;
+  background: linear-gradient(to right, var(--blue) var(--progress, 0%), var(--rule-2) var(--progress, 0%));
+}
+
+.scrub input::-moz-range-track {
+  height: 2px;
+  background: linear-gradient(to right, var(--blue) var(--progress, 0%), var(--rule-2) var(--progress, 0%));
+}
+
+.scrub input::-webkit-slider-thumb {
+  width: 12px;
+  height: 12px;
+  margin-top: -5px;
+  border: 0;
+  border-radius: 0;
+  background: var(--blue);
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.scrub input::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border: 0;
+  border-radius: 0;
+  background: var(--blue);
+}
+
+.scrub-tag {
+  position: absolute;
+  bottom: calc(100% + 4px);
+  padding: 3px 7px;
+  background: var(--ink);
+  font: 400 11px/1.3 var(--mono);
+  color: var(--paper);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* ---------- Small screens ---------- */
+
+@media (max-width: 760px) {
+  :root {
+    --cell: 24px;
+    --mcell: 20px;
+  }
+
+  .page,
+  .player-inner {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .masthead {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 18px;
+    padding-top: 28px;
+  }
+
+  .masthead h1 {
+    font-size: 38px;
+  }
+
+  .masthead h1 span {
+    display: block;
+    margin: 6px 0 0;
+    font-size: 19px;
+  }
+
+  .inputs {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 18px;
+  }
+
+  .inputs > .btn {
+    margin-top: 0;
+    justify-self: start;
+  }
+
+  .output {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .narration {
+    min-height: 6.2em;
+  }
+
+  .narration p {
+    font-size: 15px;
+  }
+
+  .transport {
+    flex-wrap: wrap;
+  }
+
+  .scrub {
+    flex-basis: 100%;
+    order: 10;
+    margin: 6px 0 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
+    transition-duration: 1ms !important;
+  }
+}
