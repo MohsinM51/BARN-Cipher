@@ -1,71 +1,72 @@
-/* BARN visualiser: a page styled like a figure from the paper. */
+/* BARN visualiser: the cipher drawn as a blueprint. */
 
 :root {
-  --paper: #f3efe6;
-  --paper-2: #e9e4d8;
-  --ink: #1b1a17;
-  --ink-2: #47443e;
-  --muted: #7a766c;
-  --rule: #d5cfc2;
-  --rule-2: #b4ac9b;
-  --blue: #1d3fd6;
-  --soak: #c6cbe9; /* blue ink soaked into paper (opaque, so cell rules don't show through) */
-  --wash: #dfe0ea; /* a lighter tint for linked bits */
-  --red: #b3341f;
+  --sheet: #16406f; /* blueprint blue */
+  --sheet-2: #123864; /* boxes pasted onto the sheet */
+  --line: #fff;
+  --line-2: rgba(255, 255, 255, 0.76);
+  --line-3: rgba(255, 255, 255, 0.6);
+  --line-4: rgba(255, 255, 255, 0.3);
+  --accent: #ffd23f; /* drafting yellow: where the head is, and keyboard focus */
+  --tint: #d3e0ee; /* white with a little of the sheet in it, for hovers on white */
+  --wash: rgba(255, 255, 255, 0.2);
+  --error: #ff8f80;
+  --grid-minor: rgba(255, 255, 255, 0.08);
+  --grid-major: rgba(255, 255, 255, 0.14);
 
-  --serif: "Newsreader", "Iowan Old Style", Georgia, serif;
-  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --sans: "B612", system-ui, sans-serif;
+  --mono: "B612 Mono", ui-monospace, "SF Mono", Menlo, monospace;
   --ease: cubic-bezier(0.3, 0.7, 0.2, 1);
 
-  --cell: 28px; /* stream cells */
+  --cell: 30px; /* stream cells; StreamFigure reads this to lay out its rows */
   --mcell: 22px; /* message cells */
-
-  /* Film grain: fractal noise, desaturated. */
-  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
-  color-scheme: light;
+  color-scheme: dark;
 }
 
 * {
   box-sizing: border-box;
 }
 
+/* Graph paper: a minor line every 16px, a major one every 80px. */
 html {
-  background: var(--paper);
+  background-color: var(--sheet);
+  background-image:
+    linear-gradient(var(--grid-major) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-major) 1px, transparent 1px),
+    linear-gradient(var(--grid-minor) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-minor) 1px, transparent 1px);
+  background-size:
+    80px 80px,
+    80px 80px,
+    16px 16px,
+    16px 16px;
 }
 
 body {
   margin: 0;
-  color: var(--ink);
-  font: 400 17px/1.55 var(--serif);
+  color: var(--line);
+  font: 400 15px/1.55 var(--sans);
   -webkit-font-smoothing: antialiased;
 }
 
-/* Grain sits over everything, ink included, so the whole page reads as printed. */
-body::after {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: 100;
-  pointer-events: none;
-  background-image: var(--grain);
-  opacity: 0.16;
-  mix-blend-mode: multiply;
+::selection {
+  background: var(--accent);
+  color: var(--sheet);
 }
 
 a {
   color: inherit;
-  text-decoration-color: var(--rule-2);
+  text-decoration-color: var(--line-3);
   text-underline-offset: 3px;
-  transition: color 0.15s, text-decoration-color 0.15s;
+  transition: text-decoration-color 0.15s;
 }
 
 a:hover {
-  color: var(--blue);
-  text-decoration-color: currentColor;
+  text-decoration-color: var(--accent);
 }
 
 :focus-visible {
-  outline: 2px solid var(--blue);
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 
@@ -75,10 +76,14 @@ button {
   cursor: pointer;
 }
 
-.page {
-  max-width: 1360px;
-  margin: 0 auto;
-  padding: 0 32px;
+/* The drawing sheet: a frame line with a fainter trim line outside it. */
+.sheet {
+  width: min(100% - 56px, 1360px);
+  margin: 28px auto;
+  padding: 0 32px 32px;
+  border: 1px solid var(--line-2);
+  outline: 1px solid var(--line-4);
+  outline-offset: 6px;
 }
 
 @keyframes rise {
@@ -101,53 +106,58 @@ button {
   align-items: flex-end;
   justify-content: space-between;
   gap: 32px;
-  padding: 44px 0 18px;
-  border-bottom: 1px solid var(--ink);
+  padding: 36px 0 18px;
+  border-bottom: 1px solid var(--line-4);
 }
 
 .masthead h1 {
   margin: 0;
-  font: 500 46px/1 var(--serif);
-  letter-spacing: -0.01em;
+  font: 700 42px/1 var(--sans);
+  letter-spacing: 0.06em;
 }
 
 .masthead h1 span {
-  margin-left: 10px;
-  font: italic 400 22px/1 var(--serif);
-  letter-spacing: 0;
-  color: var(--ink-2);
+  margin-left: 14px;
+  font: 400 13px/1 var(--mono);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--line-2);
 }
 
 .byline {
-  max-width: 62ch;
-  margin: 12px 0 0;
-  font-size: 15px;
-  line-height: 1.45;
-  color: var(--ink-2);
+  max-width: 64ch;
+  margin: 14px 0 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--line-2);
 }
 
+/* Tabs rather than buttons, so they don't read as the Encrypt button below. */
 .modes {
   display: flex;
-  gap: 22px;
+  flex: none;
+  gap: 24px;
 }
 
 .modes button {
-  padding: 4px 0;
+  padding: 6px 0;
   border: 0;
   border-bottom: 2px solid transparent;
   background: none;
-  font: 500 14px var(--mono);
-  color: var(--muted);
+  font: 400 12px var(--mono);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--line-3);
   transition: color 0.2s, border-color 0.25s var(--ease);
 }
 
 .modes button:hover {
-  color: var(--ink);
+  color: var(--line);
 }
 
 .modes button[aria-pressed="true"] {
-  border-bottom-color: var(--blue);
-  color: var(--ink);
+  border-bottom-color: var(--line);
+  color: var(--line);
 }
 
 /* ---------- Inputs ---------- */
@@ -157,22 +167,26 @@ button {
   grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr) auto;
   align-items: start;
   gap: 32px;
-  padding: 26px 0 6px;
+  padding: 26px 0 0;
 }
 
 .inputs > .btn {
-  margin-top: 26px;
+  margin-top: 24px;
 }
 
 .label {
   display: block;
-  font: 500 12px var(--mono);
-  color: var(--muted);
+  font: 400 11px var(--mono);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--line-2);
 }
 
 .meta {
   margin-left: 6px;
-  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--line-3);
 }
 
 .text-input,
@@ -180,26 +194,27 @@ button {
 .bits-input {
   display: block;
   width: 100%;
-  margin-top: 4px;
+  margin-top: 6px;
   padding: 4px 0 6px;
   border: 0;
-  border-bottom: 1px solid var(--ink);
+  border-bottom: 1px solid var(--line-2);
   border-radius: 0;
   background: transparent;
-  color: var(--ink);
+  color: var(--line);
+  caret-color: var(--accent);
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .text-input {
-  font: 400 28px/1.25 var(--serif);
+  font: 400 26px/1.25 var(--sans);
 }
 
 .key-input {
-  font: 400 19px/1.6 var(--mono);
+  font: 400 18px/1.6 var(--mono);
 }
 
 .bits-input {
-  font: 400 14px/1.55 var(--mono);
+  font: 400 13.5px/1.6 var(--mono);
   resize: vertical;
   word-break: break-all;
 }
@@ -208,12 +223,12 @@ button {
 .key-input:focus,
 .bits-input:focus {
   outline: none;
-  border-bottom-color: var(--blue);
-  box-shadow: 0 1px 0 var(--blue);
+  border-bottom-color: var(--accent);
+  box-shadow: 0 1px 0 var(--accent);
 }
 
 [aria-invalid="true"] {
-  border-bottom-color: var(--red);
+  border-bottom-color: var(--error);
 }
 
 .hint,
@@ -223,11 +238,11 @@ button {
 }
 
 .hint {
-  color: var(--muted);
+  color: var(--line-3);
 }
 
 .error {
-  color: var(--red);
+  color: var(--error);
   animation: rise 0.25s var(--ease) both;
 }
 
@@ -236,43 +251,47 @@ button {
 }
 
 .btn {
-  padding: 10px 20px;
-  border: 1px solid var(--ink);
+  padding: 9px 18px;
+  border: 1px solid var(--line-2);
   border-radius: 0;
   background: transparent;
-  font: 500 13px var(--mono);
+  font: 400 12px var(--mono);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
   white-space: nowrap;
   transition: background-color 0.15s, color 0.15s, border-color 0.15s;
 }
 
 .btn:hover {
-  background: var(--ink);
-  color: var(--paper);
+  border-color: var(--line);
+  background: var(--line);
+  color: var(--sheet);
 }
 
 .btn.primary {
-  background: var(--ink);
-  color: var(--paper);
+  border-color: var(--line);
+  background: var(--line);
+  color: var(--sheet);
+  font-weight: 700;
 }
 
 .btn.primary:hover {
-  border-color: var(--blue);
-  background: var(--blue);
+  background: var(--tint);
 }
 
 .link {
   padding: 0;
   border: 0;
   background: none;
-  color: var(--blue);
+  color: var(--line);
   text-decoration: underline;
-  text-decoration-color: rgba(29, 63, 214, 0.35);
+  text-decoration-color: var(--line-3);
   text-underline-offset: 3px;
   transition: text-decoration-color 0.15s;
 }
 
 .link:hover {
-  text-decoration-color: currentColor;
+  text-decoration-color: var(--accent);
 }
 
 /* ---------- Stage: figures beside the step card ---------- */
@@ -285,11 +304,11 @@ button {
   animation: rise 0.35s var(--ease) both;
 }
 
-/* The step card sits in the margin like a note on the figure, and stays in view. */
+/* The step card sits in the margin like a note on the drawing, and stays in view. */
 .stage-side {
   position: sticky;
   top: 24px;
-  margin-top: 30px;
+  margin-top: 34px;
 }
 
 /* ---------- Figures ---------- */
@@ -304,54 +323,59 @@ button {
 }
 
 .fig {
-  margin: 30px 0 0;
+  margin: 34px 0 0;
 }
 
 figcaption {
-  max-width: 82ch;
+  max-width: 84ch;
   margin-top: 12px;
-  font-size: 14.5px;
-  line-height: 1.45;
-  color: var(--ink-2);
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--line-2);
 }
 
 figcaption b {
-  font-weight: 500;
-  color: var(--ink);
+  margin-right: 4px;
+  font: 700 11px var(--mono);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--line);
 }
 
-/* Bits are drawn as table cells: a 1px gap over a rule-coloured background. */
+/* Bits are drawn as boxes on the sheet, eight to a group. */
 .octet {
-  position: relative;
-  display: grid;
-  grid-auto-flow: column;
-  gap: 1px;
-  border: 1px solid var(--rule);
-  background: var(--rule);
+  display: flex;
+  gap: 3px;
 }
 
 /* Fig. 1: the message, grouped by character and byte. */
 .message {
   display: flex;
   flex-wrap: wrap;
-  gap: 16px 14px;
+  gap: 18px 16px;
 }
 
 .seg {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 6px;
+  gap: 8px;
 }
 
+/* Each character sits on a bracket spanning the bytes that encode it. */
 .glyph {
-  height: 30px;
-  font: 400 26px/30px var(--serif);
+  height: 34px;
+  padding-bottom: 6px;
+  font: 400 23px/28px var(--sans);
+  text-align: center;
+  background:
+    linear-gradient(var(--line-3), var(--line-3)) left bottom / 1px 7px no-repeat,
+    linear-gradient(var(--line-3), var(--line-3)) right bottom / 1px 7px no-repeat,
+    linear-gradient(var(--line-3), var(--line-3)) center bottom / 100% 1px no-repeat;
 }
 
 .seg-bytes {
   display: flex;
-  gap: 4px;
+  gap: 8px;
 }
 
 .byte {
@@ -366,15 +390,17 @@ figcaption b {
   place-items: center;
   width: var(--mcell);
   height: var(--mcell);
-  background: var(--paper);
+  border: 1px solid var(--line-2);
+  background: var(--sheet);
   font: 400 13px var(--mono);
   scroll-margin: 96px 0 48px;
-  transition: color 0.25s, background-color 0.25s;
+  transition: color 0.25s, background-color 0.25s, border-color 0.25s;
 }
 
+/* Already buried: the bit has left the message. */
 .mbit.used {
-  background: var(--paper-2);
-  color: var(--muted);
+  border-color: var(--line-4);
+  color: var(--line-3);
 }
 
 .mbit.linked {
@@ -382,14 +408,13 @@ figcaption b {
 }
 
 .mbit.current {
-  background: var(--blue);
-  color: var(--paper);
+  box-shadow: 0 0 0 2px var(--accent);
 }
 
 .hex {
   height: 14px;
-  font: 400 11px/14px var(--mono);
-  color: var(--muted);
+  font: 400 10.5px/14px var(--mono);
+  color: var(--line-3);
 }
 
 /* Fig. 2: the key. */
@@ -404,7 +429,7 @@ figcaption b {
 
 .key .brace,
 .key .sep {
-  color: var(--muted);
+  color: var(--line-3);
 }
 
 .key .sep {
@@ -412,13 +437,13 @@ figcaption b {
 }
 
 .key .k {
-  padding: 0 2px 2px;
-  color: var(--ink-2);
+  padding: 0 2px 3px;
+  color: var(--line-2);
   transition: color 0.25s;
 }
 
 .key .k.current {
-  color: var(--blue);
+  color: var(--accent);
 }
 
 /* One underline that slides to the skip in use. */
@@ -427,85 +452,121 @@ figcaption b {
   top: 0;
   left: 0;
   height: 2px;
-  background: var(--blue);
+  background: var(--accent);
   pointer-events: none;
   transition: transform 0.35s var(--ease), width 0.35s var(--ease), opacity 0.25s;
 }
 
-/* Fig. 3: the stream or cipher, wrapped into rows of whole octets. */
+/* Fig. 3: the stream or cipher, in rows of whole bytes, each under a lane of dimensions. */
 .stream {
   position: relative;
 }
 
+/* The offset column and its gap make up the 48px gutter StreamFigure allows for. */
 .row {
   display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  margin-bottom: 24px;
+  align-items: flex-end;
+  gap: 12px;
+  margin-bottom: 10px;
 }
 
 .offset {
   flex: none;
-  width: 3.4em;
-  font: 400 11px/var(--cell) var(--mono);
+  width: 36px;
+  font: 400 10.5px/var(--cell) var(--mono);
   text-align: right;
-  color: var(--muted);
+  color: var(--line-3);
 }
 
+.row-body {
+  min-width: 0;
+}
+
+.lane {
+  display: block;
+  overflow: visible;
+}
+
+/* Every skip is a dimension: extension line, dimension line, arrowhead and value. */
+.dim {
+  color: var(--line-3);
+}
+
+.dim.current {
+  color: var(--accent);
+}
+
+.dim-ext,
+.dim-line {
+  stroke: currentColor;
+  stroke-width: 1;
+  shape-rendering: crispEdges;
+}
+
+.dim-arrow,
+.dim-label {
+  fill: currentColor;
+}
+
+.dim-label,
+.byte-label {
+  font: 400 11px var(--mono);
+}
+
+/* While the stream is drawn, each group of eight is one random byte. */
+.byte-label {
+  fill: var(--line-2);
+}
+
+/* Cells and bytes keep the same spacing as StreamFigure's geometry: 4px, and 14px between bytes. */
 .cells {
   display: flex;
-  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.stream .octet {
   gap: 4px;
 }
 
 .cell {
-  position: relative;
   display: grid;
   place-items: center;
   width: var(--cell);
   height: var(--cell);
-  background: var(--paper);
+  border: 1px solid var(--line-2);
+  background: var(--sheet);
   font: 400 14px var(--mono);
-  color: var(--ink-2);
   scroll-margin: 96px 0 48px;
   transition: background-color 0.2s;
 }
 
+/* Not drawn yet: a dashed outline waiting for its bit. */
+.cell.blank {
+  border-style: dashed;
+  border-color: var(--line-4);
+}
+
+/* A message bit, buried or read: filled in. */
 .cell.marked {
-  color: var(--blue);
-  font-weight: 500;
+  border-color: var(--line);
+  background: var(--line);
+  color: var(--sheet);
+  font-weight: 700;
 }
 
 .cell.linked {
   background: var(--wash);
 }
 
+.cell.marked.linked {
+  background: var(--tint);
+}
+
 /* The read/write head. */
 .cell.current {
+  position: relative;
   z-index: 1;
-  box-shadow: 0 0 0 2px var(--blue);
-}
-
-/* The skip that reached a buried (or read) bit, under the cell, as in the paper's Fig. 3. */
-.skip {
-  position: absolute;
-  top: calc(100% + 4px);
-  left: 0;
-  right: 0;
-  font: 500 11px/1 var(--mono);
-  text-align: center;
-  color: var(--blue);
-}
-
-/* While the stream is drawn, each octet is one random byte; its value sits underneath. */
-.octet-hex {
-  position: absolute;
-  top: calc(100% + 5px);
-  left: 0;
-  right: 0;
-  font: 400 11px/1 var(--mono);
-  text-align: center;
-  color: var(--muted);
+  box-shadow: 0 0 0 2px var(--accent);
 }
 
 /* Animation overlays (see animation.ts). */
@@ -527,23 +588,24 @@ figcaption b {
 
 .walker {
   height: var(--cell);
-  box-shadow: 0 0 0 2px var(--blue);
+  box-shadow: 0 0 0 2px var(--accent);
 }
 
+/* The cell as it was, held over the new one until the head arrives. */
 .was {
   display: grid;
   place-items: center;
   height: var(--cell);
-  background: var(--paper);
+  border: 1px solid var(--line-2);
+  background: var(--sheet);
   font: 400 14px var(--mono);
-  color: var(--ink-2);
 }
 
 .count-mark {
   opacity: 0; /* shown only while its animation runs */
-  font: italic 400 13px/1 var(--serif);
+  font: 400 10px/1 var(--mono);
   text-align: center;
-  color: var(--muted);
+  color: var(--accent);
 }
 
 .ghost {
@@ -555,21 +617,30 @@ figcaption b {
   place-items: center;
   width: 28px;
   height: 28px;
-  font: 500 15px var(--mono);
-  color: var(--blue);
+  font: 700 16px var(--mono);
+  color: var(--accent);
   pointer-events: none;
 }
 
 /* The random stream prints in byte by byte, each unpacking its bits left to right. */
-.stream.printing .d,
-.stream.printing .octet-hex {
+.stream.printing .cell .d {
   animation: print-in calc(0.26s * var(--k, 1)) calc(var(--d) * var(--k, 1)) both;
+}
+
+.stream.printing .byte-label {
+  animation: fade-in calc(0.26s * var(--k, 1)) calc(var(--d) * var(--k, 1)) both;
 }
 
 @keyframes print-in {
   from {
     opacity: 0;
     transform: scale(0.5);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
   }
 }
 
@@ -580,14 +651,14 @@ figcaption b {
   grid-template-columns: 110px minmax(0, 1fr) auto;
   align-items: baseline;
   gap: 8px 24px;
-  margin-top: 36px;
-  padding: 16px 0 28px;
-  border-top: 1px solid var(--ink);
+  margin-top: 40px;
+  padding: 16px 0 4px;
+  border-top: 1px solid var(--line-4);
 }
 
 .output-body {
   min-width: 0;
-  color: var(--ink-2);
+  color: var(--line-2);
 }
 
 .output-body p {
@@ -596,24 +667,24 @@ figcaption b {
 
 .output-body .bits {
   font: 400 14px/1.6 var(--mono);
-  color: var(--ink);
+  color: var(--line);
   word-break: break-all;
 }
 
 .output-body .plain {
-  font: 400 30px/1.25 var(--serif);
-  color: var(--ink);
+  font: 400 28px/1.25 var(--sans);
+  color: var(--line);
   overflow-wrap: anywhere;
 }
 
 .output-body .pending {
-  color: var(--muted);
+  color: var(--line-3);
 }
 
 .output-body .note {
   margin-top: 6px;
   font: 400 12px/1.5 var(--mono);
-  color: var(--red);
+  color: var(--error);
 }
 
 .output-actions {
@@ -628,21 +699,25 @@ figcaption b {
 /* ---------- Step card ---------- */
 
 .step-card {
-  padding-top: 12px;
-  border-top: 1px solid var(--ink);
+  border: 1px solid var(--line-3);
+  background: var(--sheet-2);
 }
 
 .step-count {
   margin: 0;
-  font: 400 12px var(--mono);
-  color: var(--muted);
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--line-4);
+  font: 400 11px var(--mono);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--line-2);
 }
 
 .transport {
   display: flex;
   align-items: center;
   gap: 6px;
-  margin-top: 10px;
+  padding: 14px 14px 0;
 }
 
 .transport button {
@@ -652,20 +727,21 @@ figcaption b {
   width: 34px;
   height: 34px;
   padding: 0;
-  border: 1px solid var(--ink);
+  border: 1px solid var(--line-3);
   border-radius: 0;
-  background: var(--paper);
+  background: transparent;
   transition: background-color 0.15s, color 0.15s, border-color 0.15s;
 }
 
 .transport button:hover:not(:disabled) {
-  background: var(--ink);
-  color: var(--paper);
+  border-color: var(--line);
+  background: var(--line);
+  color: var(--sheet);
 }
 
 .transport button:disabled {
-  border-color: var(--rule-2);
-  color: var(--rule-2);
+  border-color: var(--line-4);
+  color: var(--line-4);
   cursor: default;
 }
 
@@ -677,13 +753,13 @@ figcaption b {
 
 .transport .play {
   width: 46px;
-  background: var(--ink);
-  color: var(--paper);
+  border-color: var(--line);
+  background: var(--line);
+  color: var(--sheet);
 }
 
 .transport .play:hover:not(:disabled) {
-  border-color: var(--blue);
-  background: var(--blue);
+  background: var(--tint);
 }
 
 .transport .speed {
@@ -691,31 +767,33 @@ figcaption b {
   min-width: 44px;
   margin-left: auto;
   padding: 0 8px;
-  font: 500 12px var(--mono);
+  font: 400 12px var(--mono);
 }
 
 .narration {
-  margin-top: 16px;
+  padding: 4px 14px 16px;
 }
 
 .narration h2 {
-  margin: 0 0 4px;
-  font: 500 12px var(--mono);
-  color: var(--blue);
+  margin: 0 0 6px;
+  font: 400 11px var(--mono);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent);
   animation: fade 0.25s ease-out both;
 }
 
 .narration p {
   margin: 0;
-  font-size: 16.5px;
-  line-height: 1.5;
+  font-size: 15px;
+  line-height: 1.55;
   animation: fade 0.3s ease-out both;
 }
 
-/* Scrubber: a hairline with phase and byte ticks; the thumb is a small square. */
+/* Scrubber: a hairline with phase and byte ticks; the thumb marks the head in yellow. */
 .scrub {
   position: relative;
-  margin-top: 10px;
+  margin: 10px 14px 6px;
 }
 
 .ticks {
@@ -729,13 +807,13 @@ figcaption b {
   top: 50%;
   width: 1px;
   height: 7px;
-  background: var(--rule-2);
+  background: var(--line-4);
   transform: translate(-50%, -50%);
 }
 
 .tick.phase {
   height: 15px;
-  background: var(--ink);
+  background: var(--line-2);
 }
 
 .scrub input {
@@ -752,12 +830,12 @@ figcaption b {
 
 .scrub input::-webkit-slider-runnable-track {
   height: 2px;
-  background: linear-gradient(to right, var(--blue) var(--progress, 0%), var(--rule-2) var(--progress, 0%));
+  background: linear-gradient(to right, var(--line) var(--progress, 0%), var(--line-4) var(--progress, 0%));
 }
 
 .scrub input::-moz-range-track {
   height: 2px;
-  background: linear-gradient(to right, var(--blue) var(--progress, 0%), var(--rule-2) var(--progress, 0%));
+  background: linear-gradient(to right, var(--line) var(--progress, 0%), var(--line-4) var(--progress, 0%));
 }
 
 .scrub input::-webkit-slider-thumb {
@@ -766,7 +844,7 @@ figcaption b {
   margin-top: -5px;
   border: 0;
   border-radius: 0;
-  background: var(--blue);
+  background: var(--accent);
   -webkit-appearance: none;
   appearance: none;
 }
@@ -776,52 +854,181 @@ figcaption b {
   height: 12px;
   border: 0;
   border-radius: 0;
-  background: var(--blue);
+  background: var(--accent);
 }
 
 .scrub-tag {
   position: absolute;
   bottom: calc(100% + 4px);
   padding: 3px 7px;
-  background: var(--ink);
+  background: var(--line);
   font: 400 11px/1.3 var(--mono);
-  color: var(--paper);
+  color: var(--sheet);
   white-space: nowrap;
   pointer-events: none;
 }
 
-/* ---------- Colophon ---------- */
+/* ---------- Title block (bottom right of the sheet, as on any drawing) ---------- */
 
-.colophon {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 8px 24px;
-  margin-top: 24px;
-  padding: 16px 0 36px;
-  border-top: 1px solid var(--rule-2);
-  font: 400 12px/1.5 var(--mono);
-  color: var(--muted);
+/* Its right and bottom edges are the sheet's frame, so it overhangs the sheet's padding. */
+.title-block {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 96px;
+  grid-template-areas:
+    "title title sheet"
+    "method method method"
+    "drawn drawn mode";
+  gap: 1px;
+  width: min(100% + 32px, 540px);
+  margin: 56px -32px -32px auto;
+  border-top: 1px solid var(--line-2);
+  border-left: 1px solid var(--line-2);
+  background: var(--line-4); /* shows through the gaps as rules */
+  font: 400 13px/1.4 var(--sans);
 }
 
-/* ---------- Pointer label (see PointerLabel.tsx) ---------- */
+.title-block > div {
+  padding: 6px 10px 8px;
+  background: var(--sheet);
+}
 
-.pointer-label {
+.tb-key {
+  display: block;
+  margin-bottom: 2px;
+  font: 400 9.5px var(--mono);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--line-3);
+}
+
+.tb-title {
+  grid-area: title;
+  font-weight: 700;
+}
+
+.tb-sheet {
+  grid-area: sheet;
+}
+
+.tb-method {
+  grid-area: method;
+  color: var(--line-2);
+}
+
+.tb-drawn {
+  grid-area: drawn;
+}
+
+.tb-mode {
+  grid-area: mode;
+}
+
+/* ---------- Target cursor (see TargetCursor.tsx) ---------- */
+
+html.target-cursor,
+html.target-cursor * {
+  cursor: none;
+}
+
+html.target-cursor :is(input:not([type="range"]), textarea) {
+  cursor: text;
+}
+
+.reticle {
   position: fixed;
   top: 0;
   left: 0;
-  z-index: 200;
-  padding: 3px 8px;
-  background: var(--blue);
-  font: 500 11px/1.35 var(--mono);
-  color: var(--paper);
-  white-space: nowrap;
-  opacity: 0;
+  z-index: 300;
   pointer-events: none;
-  transition: opacity 0.18s;
+  opacity: 0;
+  transition: opacity 0.15s, width 0.18s var(--ease), height 0.18s var(--ease);
 }
 
-.pointer-label.on {
+.reticle.on {
+  opacity: 1;
+}
+
+/* Only snapping onto a target is eased; following the pointer never lags. */
+.reticle.locked {
+  transition: opacity 0.15s, width 0.18s var(--ease), height 0.18s var(--ease), transform 0.18s var(--ease);
+}
+
+.reticle-corners {
+  position: absolute;
+  inset: 0;
+}
+
+.reticle-corners i {
+  position: absolute;
+  width: 7px;
+  height: 7px;
+  border: 2px solid var(--line);
+}
+
+.reticle-corners i:nth-child(1) {
+  top: 0;
+  left: 0;
+  border-right: 0;
+  border-bottom: 0;
+}
+
+.reticle-corners i:nth-child(2) {
+  top: 0;
+  right: 0;
+  border-bottom: 0;
+  border-left: 0;
+}
+
+.reticle-corners i:nth-child(3) {
+  right: 0;
+  bottom: 0;
+  border-top: 0;
+  border-left: 0;
+}
+
+.reticle-corners i:nth-child(4) {
+  bottom: 0;
+  left: 0;
+  border-top: 0;
+  border-right: 0;
+}
+
+.reticle-dot {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 4px;
+  height: 4px;
+  margin: -2px 0 0 -2px;
+  border-radius: 50%;
+  background: var(--line);
+  transition: opacity 0.15s;
+}
+
+.reticle.locked .reticle-dot {
+  opacity: 0;
+}
+
+.reticle-label {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  padding: 2px 7px;
+  background: var(--line);
+  font: 400 11px/1.45 var(--mono);
+  color: var(--sheet);
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+/* Near the right edge the label hangs to the left instead. */
+.reticle.flip .reticle-label {
+  right: 0;
+  left: auto;
+}
+
+.reticle.labelled .reticle-label {
   opacity: 1;
 }
 
@@ -841,30 +1048,32 @@ figcaption b {
 
 @media (max-width: 760px) {
   :root {
-    --cell: 24px;
+    --cell: 26px;
     --mcell: 20px;
   }
 
-  .page {
-    padding-left: 16px;
-    padding-right: 16px;
+  .sheet {
+    width: calc(100% - 20px);
+    margin: 10px auto;
+    padding: 0 14px 14px;
+    outline-offset: 4px;
   }
 
   .masthead {
     flex-direction: column;
     align-items: flex-start;
     gap: 18px;
-    padding-top: 28px;
+    padding-top: 26px;
   }
 
   .masthead h1 {
-    font-size: 38px;
+    font-size: 36px;
   }
 
   .masthead h1 span {
     display: block;
-    margin: 6px 0 0;
-    font-size: 19px;
+    margin: 10px 0 0;
+    font-size: 12px;
   }
 
   .inputs {
@@ -881,8 +1090,10 @@ figcaption b {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .narration p {
-    font-size: 15.5px;
+  .title-block {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 76px;
+    width: auto;
+    margin: 40px -14px -14px;
   }
 }
 

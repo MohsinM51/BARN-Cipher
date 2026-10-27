@@ -2,7 +2,9 @@
 
 An interactive, step-by-step visualiser for the BARN cipher. Type a message
 and watch its bits get buried in a stream of random bits, one skip at a time,
-then dig them back out with the key.
+then dig them back out with the key. The page is drawn as a blueprint: the
+stream is a figure on an engineering drawing, and every skip is a dimension
+line.
 
 ## Credit
 
@@ -71,7 +73,7 @@ the closest thing it has:
    the same source.
 
 The visualiser shows this at the "Random stream P" step. Each group of eight
-cells in Fig. 3 is one of those random bytes, its value is printed underneath,
+cells in Fig. 3 is one of those random bytes, its value is printed above it,
 and the narration lists the actual bytes drawn.
 
 ## Running it
@@ -108,6 +110,9 @@ Fig. 1 shows the message as UTF-8 bytes and bits, Fig. 2 the key, and Fig. 3
 the random stream turning into the cipher. Each step the head counts out the
 skip, the next message bit flies down and is stamped into its cell, and the
 narration says what happened in the paper's notation (M₄, K₂, P₇ and so on).
+The skip is drawn above the row as a dimension line, as on an engineering
+drawing: from the previous buried bit to this one, labelled with its length.
+A skip that runs past the end of a row carries on at the start of the next.
 
 **Decrypt.** The Decrypt tab picks up the latest cipher and key, or you can
 paste your own. The message length doesn't need to be entered: the cipher ends
@@ -115,6 +120,11 @@ exactly on the last buried bit, so the key alone determines how many bits it
 holds. Try a different key to see what a wrong guess produces, as in the
 paper's Fig. 4. The page flags keys that don't fit the cipher or don't give
 whole bytes.
+
+**Reading the drawing.** Filled cells carry the message. Drafting yellow
+marks only the head: the cell being written or read, the skip in use, and the
+message bit it belongs to. The title block in the corner of the sheet names
+the method and its authors, as a drawing's title block would.
 
 **Controls.** The step card in the margin beside the figures (above them on
 narrower screens) has play, pause, step, jump and speed controls, a scrubber
@@ -129,9 +139,12 @@ up.
 | ← / →     | Previous / next step   |
 | Home, End | Jump to start / end    |
 
-With a mouse or trackpad, a small label rides beside the pointer and names
-what it's over (inspired by React Bits' User Cursor). All animation is
-skipped if your system asks for reduced motion.
+With a mouse or trackpad the pointer is a reticle: four corner brackets that
+snap around whatever you point at and name it. It's modelled on React Bits'
+[Target Cursor](https://reactbits.dev/animations/target-cursor), without the
+spin. Text fields keep the normal text cursor, and touch screens keep their
+own. All animation, the reticle included, is skipped if your system asks for
+reduced motion.
 
 ## How the code is organised
 
@@ -141,15 +154,17 @@ src/
   lib/barn.ts             The cipher: Algorithm 1, Eq. (1), parsing, UTF-8, keys (Sec. 3)
   lib/timeline.ts         Splits an encryption or decryption into steps; narration
   lib/player.ts           Form checks and the playback reducer
+  lib/drawing.ts          Fig. 3's geometry: cell positions and dimension lines
   useCipher.ts            React hook wiring player.ts to the page, one per mode
   animation.ts            Step animations (Web Animations API)
   components/             Masthead, Inputs, the three figures, Output, Player (step card),
-                          PointerLabel
-  styles.css
+                          TitleBlock, TargetCursor
+  styles.css              The blueprint: sheet, grid, linework, title block, reticle
 tests/
   barn.test.ts            The cipher
   timeline.test.ts        The step model and narration
   player.test.ts          Form checks and playback
+  drawing.test.ts         Dimension lines and cell geometry
 ```
 
 `src/lib` has no React or DOM code, so it can be tested on its own. Every
@@ -163,7 +178,7 @@ playing, scrubbing and stepping backwards always agree with one another.
 npm test
 ```
 
-94 tests run on Node's built-in test runner (no test dependencies). They cover:
+101 tests run on Node's built-in test runner (no test dependencies). They cover:
 
 - **The paper's worked example:** burying Fig. 2 in Fig. 1 gives exactly
   Fig. 3, at positions 1, 4, 6, 7, 8, 11, 13, 14, 15 and 18, in 18 bits, with
@@ -190,6 +205,9 @@ npm test
 - **Form checks and playback:** size limits measured in UTF-8 bytes, a 1 MB
   paste rejected quickly, the key and stream caps, 2000 random inputs that
   must never throw, and playback that stops exactly on the last step.
+- **The drawing:** dimension lines chain from bit to bit, a skip that crosses
+  row breaks is split into pieces that add up to its length, and rows hold
+  whole bytes.
 
 ## Notes and limits
 
@@ -205,7 +223,10 @@ npm test
 
 ## Versions
 
-- **v2.0:** this rebuild, in React and TypeScript.
+- **v2.1:** the blueprint redesign: Fig. 3 as an engineering drawing with a
+  dimension line for every skip, a title block, and the reticle pointer.
+- **v2.0:** the rebuild in React and TypeScript, styled as a figure from the
+  paper.
 - **v1.0:** the original Tkinter app and two HTML pages, kept at tag `v1.0`
   (`git checkout v1.0`). In those pages, pressing Previous re-ran a step and
   buried or read bits twice. The cipher box showed the raw random stream

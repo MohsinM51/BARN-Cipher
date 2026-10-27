@@ -6,7 +6,8 @@ import { DecryptInputs, EncryptInputs } from "./components/Inputs.tsx";
 import { Masthead } from "./components/Masthead.tsx";
 import { Output } from "./components/Output.tsx";
 import { Player } from "./components/Player.tsx";
-import { PointerLabel } from "./components/PointerLabel.tsx";
+import { TargetCursor } from "./components/TargetCursor.tsx";
+import { TitleBlock } from "./components/TitleBlock.tsx";
 
 // Space plays or pauses, the arrows step, Home and End jump. Typing in a field is left alone.
 function useShortcuts(cipher: Cipher) {
@@ -53,7 +54,7 @@ export function App() {
 
   return (
     <>
-      <div className="page">
+      <div className="sheet">
         <Masthead mode={mode} onMode={(next) => switchTo(next)} />
         <main>
           {mode === "encrypt" ? <EncryptInputs cipher={encrypt} /> : <DecryptInputs cipher={decrypt} />}
@@ -73,17 +74,9 @@ export function App() {
             </aside>
           </div>
         </main>
-        <footer className="colophon">
-          <span>Made by Mohsin Mohamed</span>
-          <span>
-            BARN is the work of J. J. Tatarkiewicz and W. B. Kuźmicz,{" "}
-            <a href="https://arxiv.org/abs/2404.09288" target="_blank" rel="noreferrer">
-              arXiv:2404.09288
-            </a>
-          </span>
-        </footer>
+        <TitleBlock mode={mode} />
       </div>
-      <PointerLabel />
+      <TargetCursor />
     </>
   );
 }
