@@ -60,18 +60,16 @@ export function App() {
           {mode === "encrypt" ? <EncryptInputs cipher={encrypt} /> : <DecryptInputs cipher={decrypt} />}
           {/* Keyed by mode so switching fades the new figures in from scratch. */}
           <div className="stage" key={mode}>
-            <div className="stage-main">
-              <Figures run={active.run} frame={frame} stale={active.stale} speed={active.speed} />
-              <Output
-                run={active.run}
-                frame={frame}
-                onSkip={() => active.go(active.run.lastStep)}
-                onDecrypt={() => switchTo("decrypt", true)}
-              />
-            </div>
+            <Figures run={active.run} frame={frame} stale={active.stale} speed={active.speed} />
             <aside className="stage-side">
               <Player cipher={active} frame={frame} />
             </aside>
+            <Output
+              run={active.run}
+              frame={frame}
+              onSkip={() => active.go(active.run.lastStep)}
+              onDecrypt={() => switchTo("decrypt", true)}
+            />
           </div>
         </main>
         <TitleBlock mode={mode} />
