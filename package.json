@@ -1,0 +1,12 @@
+{
+  "name": "barn-cipher",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Interactive figure for the BARN cipher (Bury Among Random Numbers, arXiv:2404.09288)",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "node --test"
+  }
+}
