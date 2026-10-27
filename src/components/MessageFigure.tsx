@@ -1,5 +1,5 @@
 import { memo, useMemo, type Ref } from "react";
-import { hex, quote, segments, type Frame, type Run } from "../lib/timeline.ts";
+import { hex, quote, segments, sub, type Frame, type Run } from "../lib/timeline.ts";
 import { cls } from "./cls.ts";
 
 interface Props {
@@ -16,10 +16,11 @@ const MessageBit = memo(function MessageBit(props: {
   used: boolean;
   current: boolean;
   linked: boolean;
+  tip: string;
 }) {
-  const { j, value, used, current, linked } = props;
+  const { j, value, used, current, linked, tip } = props;
   return (
-    <span className={cls("mbit", used && "used", current && "current", linked && "linked")} data-j={j}>
+    <span className={cls("mbit", used && "used", current && "current", linked && "linked")} data-j={j} data-tip={tip}>
       <span className="d">{value ?? ""}</span>
     </span>
   );
@@ -55,6 +56,7 @@ export function MessageFigure({ ref, run, frame, linked, onLink }: Props) {
                     <div className="octet">
                       {Array.from({ length: width }, (_, k) => {
                         const j = first + k;
+                        const position = run.positions[j] + 1;
                         return (
                           <MessageBit
                             key={j}
@@ -63,6 +65,7 @@ export function MessageFigure({ ref, run, frame, linked, onLink }: Props) {
                             used={!reading && j < frame.count}
                             current={j === current}
                             linked={j === linked}
+                            tip={reading ? `M${sub(j + 1)} ← C${sub(position)}` : `M${sub(j + 1)} → P${sub(position)}`}
                           />
                         );
                       })}

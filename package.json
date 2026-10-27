@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "description": "Interactive figure for the BARN cipher (Bury Among Random Numbers, arXiv:2404.09288)",
+  "author": "Mohsin Mohamed",
   "engines": {
     "node": ">=22.18"
   },

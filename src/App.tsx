@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { frameAt, type Mode } from "./lib/timeline.ts";
 import { useCipher, type Cipher } from "./useCipher.ts";
+import { Cursor } from "./components/Cursor.tsx";
+import { DotGrid } from "./components/DotGrid.tsx";
 import { Figures } from "./components/Figures.tsx";
 import { DecryptInputs, EncryptInputs } from "./components/Inputs.tsx";
 import { Masthead } from "./components/Masthead.tsx";
@@ -52,20 +54,38 @@ export function App() {
 
   return (
     <>
+      <DotGrid />
       <div className="page">
         <Masthead mode={mode} onMode={(next) => switchTo(next)} />
         <main>
           {mode === "encrypt" ? <EncryptInputs cipher={encrypt} /> : <DecryptInputs cipher={decrypt} />}
-          <Figures key={mode} run={active.run} frame={frame} stale={active.stale} speed={active.speed} />
-          <Output
-            run={active.run}
-            frame={frame}
-            onSkip={() => active.go(active.run.lastStep)}
-            onDecrypt={() => switchTo("decrypt", true)}
-          />
+          {/* Keyed by mode so switching fades the new figures in from scratch. */}
+          <div className="stage" key={mode}>
+            <div className="stage-main">
+              <Figures run={active.run} frame={frame} stale={active.stale} speed={active.speed} />
+              <Output
+                run={active.run}
+                frame={frame}
+                onSkip={() => active.go(active.run.lastStep)}
+                onDecrypt={() => switchTo("decrypt", true)}
+              />
+            </div>
+            <aside className="stage-side">
+              <Player cipher={active} frame={frame} />
+            </aside>
+          </div>
         </main>
+        <footer className="colophon">
+          <span>Made by Mohsin Mohamed</span>
+          <span>
+            BARN is the work of J. J. Tatarkiewicz and W. B. Kuźmicz,{" "}
+            <a href="https://arxiv.org/abs/2404.09288" target="_blank" rel="noreferrer">
+              arXiv:2404.09288
+            </a>
+          </span>
+        </footer>
       </div>
-      <Player cipher={active} frame={frame} />
+      <Cursor />
     </>
   );
 }

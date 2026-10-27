@@ -47,7 +47,17 @@ function overlay(scene: Scene, className: string, text = "", parent: HTMLElement
 
 const cellEl = (scene: Scene, i: number) => scene.stream.querySelector<HTMLElement>(`.cell[data-i="${i}"]`)!;
 const bitEl = (scene: Scene, j: number) => scene.message.querySelector<HTMLElement>(`.mbit[data-j="${j}"]`)!;
-const placeAt = (el: HTMLElement) => `translate(${el.offsetLeft}px, ${el.offsetTop}px)`;
+
+// Where an element sits inside the overlay layer, whatever its own layout parents are.
+function offsetIn(scene: Scene, el: HTMLElement) {
+  const a = el.getBoundingClientRect();
+  const o = scene.fx.getBoundingClientRect();
+  return { x: a.left - o.left, y: a.top - o.top };
+}
+function placeAt(scene: Scene, el: HTMLElement, dy = 0) {
+  const { x, y } = offsetIn(scene, el);
+  return `translate(${x}px, ${y + dy}px)`;
+}
 
 // The head counts out the skip one cell at a time, with pencil numerals, then rests on its target.
 function walk(scene: Scene, hop: Hop, duration: number) {
@@ -57,9 +67,9 @@ function walk(scene: Scene, hop: Hop, duration: number) {
   const frames: Keyframe[] = [];
   for (let c = 0; c <= hop.skip; c++) {
     const i = from + c;
-    frames.push({ transform: placeAt(cellEl(scene, Math.max(i, 0))), opacity: i < 0 ? 0 : 1, offset: (c / hop.skip) * LAND, easing: "steps(1, end)" });
+    frames.push({ transform: placeAt(scene, cellEl(scene, Math.max(i, 0))), opacity: i < 0 ? 0 : 1, offset: (c / hop.skip) * LAND, easing: "steps(1, end)" });
   }
-  frames.push({ transform: placeAt(target), opacity: 1, offset: 1 });
+  frames.push({ transform: placeAt(scene, target), opacity: 1, offset: 1 });
   animate(scene, walker, frames, { duration, fill: "forwards" })!.onfinish = () => walker.remove();
 
   // The target's own ring would give the answer away before the head arrives.
@@ -69,7 +79,7 @@ function walk(scene: Scene, hop: Hop, duration: number) {
   for (let c = 1; c <= hop.skip; c++) {
     const cell = cellEl(scene, from + c);
     const mark = overlay(scene, "count-mark", String(c));
-    mark.style.transform = `translate(${cell.offsetLeft}px, ${cell.offsetTop - 17}px)`;
+    mark.style.transform = placeAt(scene, cell, -17);
     animate(scene, mark, [{ opacity: 0 }, { opacity: 1, offset: 0.2 }, { opacity: 0 }], {
       duration: scene.ms(560),
       delay: (c / hop.skip) * duration * LAND,
@@ -157,7 +167,7 @@ function forward(scene: Scene, run: Run, frame: Frame) {
     // The message bit flies down; the old random bit shows until it's pressed over.
     fly(scene, bitEl(scene, hop.j), target, String(run.bits[hop.j]), land);
     const was = overlay(scene, "was", String(run.random[hop.to - 1]));
-    was.style.transform = placeAt(target);
+    was.style.transform = placeAt(scene, target);
     animate(scene, was, [{ opacity: 1 }, { opacity: 1, offset: 0.92 }, { opacity: 0 }], { duration: land + scene.ms(60), fill: "forwards" });
     stamp(scene, target.querySelector(".d"), land);
     return;
@@ -221,13 +231,12 @@ export function useStepAnimation(
     return () => stop(scene);
   }, [run, frame.step]);
 
-  // Keep the head in view (clear of the sticky player) as it moves.
+  // Keep the head in view as it moves.
   useEffect(() => {
     const cell = frame.hop && streamRef.current?.querySelector<HTMLElement>(`.cell[data-i="${frame.hop.to - 1}"]`);
     if (!cell) return;
     const box = cell.getBoundingClientRect();
-    const bottom = innerHeight - (document.querySelector<HTMLElement>(".player")?.offsetHeight ?? 0);
-    if (box.top < 0 || box.bottom > bottom) {
+    if (box.top < 0 || box.bottom > innerHeight) {
       cell.scrollIntoView({ block: "nearest", behavior: reducedMotion() ? "auto" : "smooth" });
     }
   }, [run, frame.step]);
