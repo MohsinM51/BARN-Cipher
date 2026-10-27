@@ -1,6 +1,6 @@
 {
   "name": "barn-cipher",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "private": true,
   "type": "module",
   "description": "Interactive figure for the BARN cipher (Bury Among Random Numbers, arXiv:2404.09288)",
