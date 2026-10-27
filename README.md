@@ -129,12 +129,9 @@ up.
 | ← / →     | Previous / next step   |
 | Home, End | Jump to start / end    |
 
-With a mouse or trackpad, the pointer is an ink arrow that turns toward
-where it's heading, and the dotted paper swells under it. Both are written
-for this project, inspired by React Bits' Gyroscope Cursor and User Cursor and
-by the interactive dot grids of Rob Crocker and sathishk-dev. Touch screens
-keep the normal behaviour, and all animation is skipped if your system asks
-for reduced motion.
+With a mouse or trackpad, a small label rides beside the pointer and names
+what it's over (inspired by React Bits' User Cursor). All animation is
+skipped if your system asks for reduced motion.
 
 ## How the code is organised
 
@@ -147,7 +144,7 @@ src/
   useCipher.ts            React hook wiring player.ts to the page, one per mode
   animation.ts            Step animations (Web Animations API)
   components/             Masthead, Inputs, the three figures, Output, Player (step card),
-                          Cursor and DotGrid
+                          PointerLabel
   styles.css
 tests/
   barn.test.ts            The cipher

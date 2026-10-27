@@ -1,13 +1,12 @@
 import { useEffect, useState } from "react";
 import { frameAt, type Mode } from "./lib/timeline.ts";
 import { useCipher, type Cipher } from "./useCipher.ts";
-import { Cursor } from "./components/Cursor.tsx";
-import { DotGrid } from "./components/DotGrid.tsx";
 import { Figures } from "./components/Figures.tsx";
 import { DecryptInputs, EncryptInputs } from "./components/Inputs.tsx";
 import { Masthead } from "./components/Masthead.tsx";
 import { Output } from "./components/Output.tsx";
 import { Player } from "./components/Player.tsx";
+import { PointerLabel } from "./components/PointerLabel.tsx";
 
 // Space plays or pauses, the arrows step, Home and End jump. Typing in a field is left alone.
 function useShortcuts(cipher: Cipher) {
@@ -54,7 +53,6 @@ export function App() {
 
   return (
     <>
-      <DotGrid />
       <div className="page">
         <Masthead mode={mode} onMode={(next) => switchTo(next)} />
         <main>
@@ -85,7 +83,7 @@ export function App() {
           </span>
         </footer>
       </div>
-      <Cursor />
+      <PointerLabel />
     </>
   );
 }
