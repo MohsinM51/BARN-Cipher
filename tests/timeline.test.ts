@@ -1,22 +1,23 @@
-// Tests for js/timeline.js, the step model behind the visualiser.
-const { describe, test } = require("node:test");
-const assert = require("node:assert/strict");
-const BARN = require("../js/barn.js");
-const Timeline = require("../js/timeline.js");
-const { seeded, seededBits } = require("./helpers.js");
+// Tests for src/lib/timeline.ts, the step model behind the visualiser.
+import { describe, test } from "node:test";
+import assert from "node:assert/strict";
+import * as BARN from "../src/lib/barn.ts";
+import * as Timeline from "../src/lib/timeline.ts";
+import type { Run } from "../src/lib/timeline.ts";
+import { seeded, seededBits } from "./helpers.ts";
 
 const KEY = [1, 3, 2, 1];
 const enc = Timeline.encryption("HELLO", KEY, seededBits(seeded(8), 100)); // 40 bits, 70-bit cipher
 const dec = Timeline.decryption(enc.cipher, KEY);
 
-const frame = (run, n) => Timeline.frameAt(run, n);
-const shownAt = (run, n) => run.cipher.map((_, i) => Timeline.cellAt(run, frame(run, n), i));
+const frame = (run: Run, n: number) => Timeline.frameAt(run, n);
+const shownAt = (run: Run, n: number) => run.cipher.map((_, i) => Timeline.cellAt(run, frame(run, n), i));
 
 // The stream at step n worked out from scratch, independently of cellAt.
-function expected(run, n) {
+function expected(run: Run, n: number) {
   const mu = run.bits.length;
   const count = run.mode === "encrypt" ? Math.min(Math.max(n - 1, 0), mu) : Math.min(n, mu);
-  const bits = run.mode === "encrypt" ? run.random.slice(0, run.cipher.length) : run.cipher.slice();
+  const bits: number[] = run.mode === "encrypt" ? run.random.slice(0, run.cipher.length) : run.cipher.slice();
   const marked = bits.map(() => false);
   for (let j = 0; j < count; j++) {
     const i = run.positions[j];
@@ -25,7 +26,7 @@ function expected(run, n) {
   }
   return bits.map((bit, i) => ({ bit, marked: marked[i] }));
 }
-const strip = (cells) => cells.map(({ bit, marked }) => ({ bit, marked }));
+const strip = (cells: { bit: number; marked: boolean }[]) => cells.map(({ bit, marked }) => ({ bit, marked }));
 
 describe("steps", () => {
   test("encryption: message, stream, one step per bit, cipher", () => {
@@ -117,8 +118,46 @@ describe("navigation can't corrupt the state (the v1 bug)", () => {
   });
 });
 
+describe("Fig. 1 segments", () => {
+  const view = (segs: Timeline.Segment[]) => segs.map(({ text, first, bits }) => ({ text, first, bits }));
+
+  test("encryption groups bits by character", () => {
+    assert.deepEqual(view(Timeline.segments(Timeline.encryption("a é", KEY))), [
+      { text: "a", first: 0, bits: 8 },
+      { text: "␣", first: 8, bits: 8 },
+      { text: "é", first: 16, bits: 16 },
+    ]);
+  });
+
+  test("decryption groups the same way when the key is right", () => {
+    const run = Timeline.encryption("a日🙂", KEY);
+    const back = Timeline.decryption(run.cipher, KEY);
+    assert.deepEqual(view(Timeline.segments(back)), view(Timeline.segments(run)));
+  });
+
+  test("leftover bits from a wrong key get their own group", () => {
+    const guessed = Timeline.decryption(BARN.parseBits("100111000000110111"), [2, 1, 2, 1]);
+    // 001100001011: one byte 0x30 ("0"), then 4 bits that don't make a byte
+    assert.deepEqual(view(Timeline.segments(guessed)), [
+      { text: "0", first: 0, bits: 8 },
+      { text: "", first: 8, bits: 4 },
+    ]);
+  });
+
+  test("segments always spell out the decoded text, broken bytes included", () => {
+    const rand = seeded(10);
+    for (let trial = 0; trial < 300; trial++) {
+      const cipher = seededBits(rand, 40 + Math.floor(rand() * 200));
+      const run = Timeline.decryption(cipher, [1 + Math.floor(rand() * 3), 2]);
+      const spelled = Timeline.segments(run).map((s) => s.text).join("");
+      assert.equal(spelled, Array.from(run.text, Timeline.glyph).join(""));
+      assert.equal(Timeline.segments(run).reduce((n, s) => n + s.bits, 0), run.bits.length);
+    }
+  });
+});
+
 describe("narration", () => {
-  const say = (run, n) => Timeline.describe(run, frame(run, n));
+  const say = (run: Run, n: number) => Timeline.describe(run, frame(run, n));
 
   test("uses the paper's notation", () => {
     // "H" is 01001000, so M₂ = 1; the second skip is K₂ = 3, from position 1 to 4.
@@ -129,7 +168,7 @@ describe("narration", () => {
   test("says whether the random bit had to change", () => {
     for (let n = 2; n < enc.lastStep; n++) {
       const { hop } = frame(enc, n);
-      const same = enc.random[hop.to - 1] === enc.bits[hop.j];
+      const same = enc.random[hop!.to - 1] === enc.bits[hop!.j];
       assert.match(say(enc, n).text, same ? /is already \d; it keeps its value/ : /was \d; it now holds \d/);
     }
   });

@@ -1,10 +1,10 @@
-// Tests for js/barn.js. Run with `npm test` (or `node --test`).
-const { describe, test } = require("node:test");
-const assert = require("node:assert/strict");
-const BARN = require("../js/barn.js");
-const { bits, str, seeded, seededBits, seededKey } = require("./helpers.js");
+// Tests for src/lib/barn.ts. Run with `npm test`.
+import { describe, test } from "node:test";
+import assert from "node:assert/strict";
+import * as BARN from "../src/lib/barn.ts";
+import { bits, seeded, seededBits, seededKey, str } from "./helpers.ts";
 
-const ones = (b) => b.filter(Boolean).length;
+const ones = (b: readonly number[]) => b.filter(Boolean).length;
 
 // The paper's worked example, Sec. 2.
 const FIG1_STREAM = bits("000110100000101110100"); // Fig. 1 (first 21 bits)
@@ -81,7 +81,7 @@ describe("parseKey", () => {
     assert.deepEqual(BARN.parseKey(String(BARN.MAX_SKIP)), [BARN.MAX_SKIP]);
   });
 
-  const rejected = [
+  const rejected: [string, RegExp][] = [
     ["", /Enter a key/],
     [" , ", /Enter a key/],
     ["0,2", /can't be 0/],
@@ -132,7 +132,7 @@ describe("text encoding", () => {
 
   test("a character is held back until all its bytes have arrived", () => {
     const all = BARN.encodeText("a日").bits; // 1 byte + 3 bytes
-    const partial = (n) => {
+    const partial = (n: number) => {
       const { text, pendingBytes } = BARN.decodeBits(all.slice(0, n));
       return { text, pendingBytes };
     };
@@ -280,7 +280,7 @@ describe("keys from random bits (Sec. 3)", () => {
   test("key sizes match Table 1 and skips match the growth factors", () => {
     // Table 1, 64 random bits: 16, 24, 18, 9 and 15 elements (octal's 18.375 is
     // rounded down there). Sec. 3: messages grow 1.5, 2, 4, 5 and 8 times.
-    const expected = {
+    const expected: Record<BARN.KeyBase, [number, number]> = {
       ternary: [16, 1.5],
       quaternary: [24, 2],
       octal: [18.375, 4],
@@ -289,7 +289,7 @@ describe("keys from random bits (Sec. 3)", () => {
     };
     const rand = seeded(6);
     const runs = 4000;
-    for (const [base, [size, skip]] of Object.entries(expected)) {
+    for (const [base, [size, skip]] of Object.entries(expected) as [BARN.KeyBase, [number, number]][]) {
       let elements = 0;
       let total = 0;
       for (let r = 0; r < runs; r++) {
@@ -303,7 +303,7 @@ describe("keys from random bits (Sec. 3)", () => {
   });
 
   test("generateKey only returns keys that parseKey accepts", () => {
-    for (const base of Object.keys(BARN.KEY_BASES)) {
+    for (const base of Object.keys(BARN.KEY_BASES) as BARN.KeyBase[]) {
       for (let r = 0; r < 200; r++) {
         const key = BARN.generateKey(base, 8);
         assert.ok(key.every((k) => k >= 1 && k <= BARN.KEY_BASES[base].max));
@@ -313,7 +313,7 @@ describe("keys from random bits (Sec. 3)", () => {
   });
 
   test("generateKey rejects unknown bases and too few bits", () => {
-    assert.throws(() => BARN.generateKey("binary"), /Unknown base/);
+    assert.throws(() => BARN.generateKey("binary" as BARN.KeyBase), /Unknown base/);
     assert.throws(() => BARN.generateKey("octal", 2), RangeError);
   });
 });

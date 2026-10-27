@@ -10,3 +10,7 @@ venv/
 # The paper is distributed by arXiv under a licence that doesn't cover
 # redistribution, so the README links to it instead of shipping a copy.
 2404.09288v1.pdf
+
+# Node
+node_modules/
+dist/
