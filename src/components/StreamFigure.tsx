@@ -1,7 +1,7 @@
 import { memo, useLayoutEffect, useMemo, useState, type CSSProperties, type RefObject } from "react";
 import { bitsToBytes } from "../lib/barn.ts";
 import { cellCentre, cellLeft, columnsFor, dimensions, type Grid, type Span } from "../lib/drawing.ts";
-import { cellAt, hex, sub, type Frame, type Run } from "../lib/timeline.ts";
+import { cellAt, hex, plural, sub, type Frame, type Run } from "../lib/timeline.ts";
 import { cls } from "./cls.ts";
 
 const GAP = 4; // px between cells
@@ -219,8 +219,8 @@ export function StreamFigure({ ref, run, frame, linked, onLink }: Props) {
       <figcaption>
         <b>Fig. 3.</b>{" "}
         {run.mode === "encrypt"
-          ? `Random stream P becoming cipher C · ${length} bits in groups of eight, one random byte each. Filled cells carry the message; each dimension is the skip that reached them.`
-          : `Cipher C · ${length} bits. Filled cells are read back as the message; each dimension is the skip that reached them.`}
+          ? `Random stream P becoming cipher C · ${plural(length, "bit")} in groups of eight, one random byte each. Filled cells carry the message; each dimension is the skip that reached them.`
+          : `Cipher C · ${plural(length, "bit")}. Filled cells are read back as the message; each dimension is the skip that reached them.`}
       </figcaption>
     </figure>
   );

@@ -1,6 +1,7 @@
 import { Fragment, type ReactNode } from "react";
 import { byteLength, generateKey, KEY_BASES, type KeyBase } from "../lib/barn.ts";
 import { MAX_TEXT_BYTES } from "../lib/player.ts";
+import { plural } from "../lib/timeline.ts";
 import type { Cipher } from "../useCipher.ts";
 
 const BASE_NAMES: Record<KeyBase, string> = {
@@ -86,7 +87,7 @@ export function DecryptInputs({ cipher }: { cipher: Cipher }) {
 
   return (
     <form className="inputs" noValidate onSubmit={(e) => (e.preventDefault(), start())}>
-      <Field id="cipher" label="cipher C" meta={`${count} bits`} error={errors.text}>
+      <Field id="cipher" label="cipher C" meta={plural(count, "bit")} error={errors.text}>
         <textarea className="bits-input" rows={2} value={fields.text} onChange={(e) => edit({ text: e.target.value })} {...fieldProps("cipher", errors.text)} />
       </Field>
       <Field id="dec-key" label="key K" hint="the same key that encrypted it" error={errors.key}>

@@ -1,5 +1,5 @@
 import { memo, useMemo, type Ref } from "react";
-import { hex, quote, segments, sub, type Frame, type Run } from "../lib/timeline.ts";
+import { hex, plural, quote, segments, sub, type Frame, type Run } from "../lib/timeline.ts";
 import { cls } from "./cls.ts";
 
 interface Props {
@@ -83,8 +83,8 @@ export function MessageFigure({ ref, run, frame, linked, onLink }: Props) {
       <figcaption>
         <b>Fig. 1.</b>{" "}
         {reading
-          ? `Recovered message M: ${run.bits.length} bits read from the cipher, decoded as UTF-8 as each byte completes.`
-          : `Message M: ${quote(run.text)} as ${run.bytes.length} bytes of UTF-8, μ = ${run.bits.length} bits.`}
+          ? `Recovered message M: ${plural(run.bits.length, "bit")} read from the cipher, decoded as UTF-8 as each byte completes.`
+          : `Message M: ${quote(run.text)} as ${plural(run.bytes.length, "byte")} of UTF-8, μ = ${run.bits.length} bits.`}
       </figcaption>
     </figure>
   );
