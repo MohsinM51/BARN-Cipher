@@ -1,0 +1,31 @@
+{
+  "name": "barn-cipher",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Interactive figure for the BARN cipher (Bury Among Random Numbers, arXiv:2404.09288)",
+  "author": "Mohsin Mohamed",
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "test": "node --test",
+    "typecheck": "tsc"
+  },
+  "dependencies": {
+    "react": "19.3.0",
+    "react-dom": "19.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.5",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.1.2",
+    "typescript": "7.0.2",
+    "vite": "8.3.4",
+    "vite-plugin-singlefile": "2.3.3"
+  }
+}

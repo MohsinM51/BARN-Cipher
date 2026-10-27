@@ -1,0 +1,957 @@
+/* BARN visualiser: a page styled like a figure from the paper. */
+
+:root {
+  --paper: #f3efe6;
+  --paper-2: #e9e4d8;
+  --ink: #1b1a17;
+  --ink-2: #47443e;
+  --muted: #7a766c;
+  --rule: #d5cfc2;
+  --rule-2: #b4ac9b;
+  --blue: #1d3fd6;
+  --soak: #c6cbe9; /* blue ink soaked into paper (opaque, so cell rules don't show through) */
+  --wash: #dfe0ea; /* a lighter tint for linked bits */
+  --red: #b3341f;
+
+  --serif: "Newsreader", "Iowan Old Style", Georgia, serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --ease: cubic-bezier(0.3, 0.7, 0.2, 1);
+
+  --cell: 28px; /* stream cells */
+  --mcell: 22px; /* message cells */
+
+  /* Film grain: fractal noise, desaturated. */
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)'/%3E%3C/svg%3E");
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--paper);
+}
+
+body {
+  margin: 0;
+  color: var(--ink);
+  font: 400 17px/1.55 var(--serif);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Grain sits over everything, ink included, so the whole page reads as printed. */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  pointer-events: none;
+  background-image: var(--grain);
+  opacity: 0.16;
+  mix-blend-mode: multiply;
+}
+
+/* Dotted graph paper under the content (see DotGrid.tsx). */
+.dot-grid {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+a {
+  color: inherit;
+  text-decoration-color: var(--rule-2);
+  text-underline-offset: 3px;
+  transition: color 0.15s, text-decoration-color 0.15s;
+}
+
+a:hover {
+  color: var(--blue);
+  text-decoration-color: currentColor;
+}
+
+:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.page {
+  position: relative;
+  z-index: 1;
+  max-width: 1360px;
+  margin: 0 auto;
+  padding: 0 32px;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+@keyframes fade {
+  from {
+    opacity: 0.25;
+  }
+}
+
+/* ---------- Masthead ---------- */
+
+.masthead {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 32px;
+  padding: 44px 0 18px;
+  border-bottom: 1px solid var(--ink);
+}
+
+.masthead h1 {
+  margin: 0;
+  font: 500 46px/1 var(--serif);
+  letter-spacing: -0.01em;
+}
+
+.masthead h1 span {
+  margin-left: 10px;
+  font: italic 400 22px/1 var(--serif);
+  letter-spacing: 0;
+  color: var(--ink-2);
+}
+
+.byline {
+  max-width: 62ch;
+  margin: 12px 0 0;
+  font-size: 15px;
+  line-height: 1.45;
+  color: var(--ink-2);
+}
+
+.modes {
+  display: flex;
+  gap: 22px;
+}
+
+.modes button {
+  padding: 4px 0;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  font: 500 14px var(--mono);
+  color: var(--muted);
+  transition: color 0.2s, border-color 0.25s var(--ease);
+}
+
+.modes button:hover {
+  color: var(--ink);
+}
+
+.modes button[aria-pressed="true"] {
+  border-bottom-color: var(--blue);
+  color: var(--ink);
+}
+
+/* ---------- Inputs ---------- */
+
+.inputs {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 32px;
+  padding: 26px 0 6px;
+}
+
+.inputs > .btn {
+  margin-top: 26px;
+}
+
+.label {
+  display: block;
+  font: 500 12px var(--mono);
+  color: var(--muted);
+}
+
+.meta {
+  margin-left: 6px;
+  font-weight: 400;
+}
+
+.text-input,
+.key-input,
+.bits-input {
+  display: block;
+  width: 100%;
+  margin-top: 4px;
+  padding: 4px 0 6px;
+  border: 0;
+  border-bottom: 1px solid var(--ink);
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.text-input {
+  font: 400 28px/1.25 var(--serif);
+}
+
+.key-input {
+  font: 400 19px/1.6 var(--mono);
+}
+
+.bits-input {
+  font: 400 14px/1.55 var(--mono);
+  resize: vertical;
+  word-break: break-all;
+}
+
+.text-input:focus,
+.key-input:focus,
+.bits-input:focus {
+  outline: none;
+  border-bottom-color: var(--blue);
+  box-shadow: 0 1px 0 var(--blue);
+}
+
+[aria-invalid="true"] {
+  border-bottom-color: var(--red);
+}
+
+.hint,
+.error {
+  margin: 6px 0 0;
+  font: 400 12px/1.5 var(--mono);
+}
+
+.hint {
+  color: var(--muted);
+}
+
+.error {
+  color: var(--red);
+  animation: rise 0.25s var(--ease) both;
+}
+
+.error:empty {
+  display: none;
+}
+
+.btn {
+  padding: 10px 20px;
+  border: 1px solid var(--ink);
+  border-radius: 0;
+  background: transparent;
+  font: 500 13px var(--mono);
+  white-space: nowrap;
+  transition: background-color 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.btn:hover {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.btn.primary {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.btn.primary:hover {
+  border-color: var(--blue);
+  background: var(--blue);
+}
+
+.link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--blue);
+  text-decoration: underline;
+  text-decoration-color: rgba(29, 63, 214, 0.35);
+  text-underline-offset: 3px;
+  transition: text-decoration-color 0.15s;
+}
+
+.link:hover {
+  text-decoration-color: currentColor;
+}
+
+/* ---------- Stage: figures beside the step card ---------- */
+
+.stage {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  align-items: start;
+  gap: 0 48px;
+  animation: rise 0.35s var(--ease) both;
+}
+
+/* The step card sits in the margin like a note on the figure, and stays in view. */
+.stage-side {
+  position: sticky;
+  top: 24px;
+  margin-top: 30px;
+}
+
+/* ---------- Figures ---------- */
+
+.figure {
+  transition: opacity 0.25s;
+}
+
+/* The fields have an error, so what's drawn is the last valid input. */
+.figure.stale {
+  opacity: 0.35;
+}
+
+.fig {
+  margin: 30px 0 0;
+}
+
+figcaption {
+  max-width: 82ch;
+  margin-top: 12px;
+  font-size: 14.5px;
+  line-height: 1.45;
+  color: var(--ink-2);
+}
+
+figcaption b {
+  font-weight: 500;
+  color: var(--ink);
+}
+
+/* Bits are drawn as table cells: a 1px gap over a rule-coloured background. */
+.octet {
+  position: relative;
+  display: grid;
+  grid-auto-flow: column;
+  gap: 1px;
+  border: 1px solid var(--rule);
+  background: var(--rule);
+}
+
+/* Fig. 1: the message, grouped by character and byte. */
+.message {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px 14px;
+}
+
+.seg {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.glyph {
+  height: 30px;
+  font: 400 26px/30px var(--serif);
+}
+
+.seg-bytes {
+  display: flex;
+  gap: 4px;
+}
+
+.byte {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+
+.mbit {
+  display: grid;
+  place-items: center;
+  width: var(--mcell);
+  height: var(--mcell);
+  background: var(--paper);
+  font: 400 13px var(--mono);
+  scroll-margin: 96px 0 48px;
+  transition: color 0.25s, background-color 0.25s;
+}
+
+.mbit.used {
+  background: var(--paper-2);
+  color: var(--muted);
+}
+
+.mbit.linked {
+  background: var(--wash);
+}
+
+.mbit.current {
+  background: var(--blue);
+  color: var(--paper);
+}
+
+.hex {
+  height: 14px;
+  font: 400 11px/14px var(--mono);
+  color: var(--muted);
+}
+
+/* Fig. 2: the key. */
+.key {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  padding-bottom: 3px;
+  font: 400 20px var(--mono);
+}
+
+.key .brace,
+.key .sep {
+  color: var(--muted);
+}
+
+.key .sep {
+  margin-right: 0.6ch;
+}
+
+.key .k {
+  padding: 0 2px 2px;
+  color: var(--ink-2);
+  transition: color 0.25s;
+}
+
+.key .k.current {
+  color: var(--blue);
+}
+
+/* One underline that slides to the skip in use. */
+.key-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 2px;
+  background: var(--blue);
+  pointer-events: none;
+  transition: transform 0.35s var(--ease), width 0.35s var(--ease), opacity 0.25s;
+}
+
+/* Fig. 3: the stream or cipher, wrapped into rows of whole octets. */
+.stream {
+  position: relative;
+}
+
+.row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 24px;
+}
+
+.offset {
+  flex: none;
+  width: 3.4em;
+  font: 400 11px/var(--cell) var(--mono);
+  text-align: right;
+  color: var(--muted);
+}
+
+.cells {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.cell {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: var(--cell);
+  height: var(--cell);
+  background: var(--paper);
+  font: 400 14px var(--mono);
+  color: var(--ink-2);
+  scroll-margin: 96px 0 48px;
+  transition: background-color 0.2s;
+}
+
+.cell.marked {
+  color: var(--blue);
+  font-weight: 500;
+}
+
+.cell.linked {
+  background: var(--wash);
+}
+
+/* The read/write head. */
+.cell.current {
+  z-index: 1;
+  box-shadow: 0 0 0 2px var(--blue);
+}
+
+/* The skip that reached a buried (or read) bit, under the cell, as in the paper's Fig. 3. */
+.skip {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  font: 500 11px/1 var(--mono);
+  text-align: center;
+  color: var(--blue);
+}
+
+/* While the stream is drawn, each octet is one random byte; its value sits underneath. */
+.octet-hex {
+  position: absolute;
+  top: calc(100% + 5px);
+  left: 0;
+  right: 0;
+  font: 400 11px/1 var(--mono);
+  text-align: center;
+  color: var(--muted);
+}
+
+/* Animation overlays (see animation.ts). */
+.fx {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.walker,
+.was,
+.count-mark {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: var(--cell);
+}
+
+.walker {
+  height: var(--cell);
+  box-shadow: 0 0 0 2px var(--blue);
+}
+
+.was {
+  display: grid;
+  place-items: center;
+  height: var(--cell);
+  background: var(--paper);
+  font: 400 14px var(--mono);
+  color: var(--ink-2);
+}
+
+.count-mark {
+  opacity: 0; /* shown only while its animation runs */
+  font: italic 400 13px/1 var(--serif);
+  text-align: center;
+  color: var(--muted);
+}
+
+.ghost {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  font: 500 15px var(--mono);
+  color: var(--blue);
+  pointer-events: none;
+}
+
+/* The random stream prints in byte by byte, each unpacking its bits left to right. */
+.stream.printing .d,
+.stream.printing .octet-hex {
+  animation: print-in calc(0.26s * var(--k, 1)) calc(var(--d) * var(--k, 1)) both;
+}
+
+@keyframes print-in {
+  from {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+}
+
+/* ---------- Output ---------- */
+
+.output {
+  display: grid;
+  grid-template-columns: 110px minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 8px 24px;
+  margin-top: 36px;
+  padding: 16px 0 28px;
+  border-top: 1px solid var(--ink);
+}
+
+.output-body {
+  min-width: 0;
+  color: var(--ink-2);
+}
+
+.output-body p {
+  margin: 0;
+}
+
+.output-body .bits {
+  font: 400 14px/1.6 var(--mono);
+  color: var(--ink);
+  word-break: break-all;
+}
+
+.output-body .plain {
+  font: 400 30px/1.25 var(--serif);
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.output-body .pending {
+  color: var(--muted);
+}
+
+.output-body .note {
+  margin-top: 6px;
+  font: 400 12px/1.5 var(--mono);
+  color: var(--red);
+}
+
+.output-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.reveal {
+  animation: print-in 0.4s both;
+}
+
+/* ---------- Step card ---------- */
+
+.step-card {
+  padding-top: 12px;
+  border-top: 1px solid var(--ink);
+}
+
+.step-count {
+  margin: 0;
+  font: 400 12px var(--mono);
+  color: var(--muted);
+}
+
+.transport {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.transport button {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 1px solid var(--ink);
+  border-radius: 0;
+  background: var(--paper);
+  transition: background-color 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.transport button:hover:not(:disabled) {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.transport button:disabled {
+  border-color: var(--rule-2);
+  color: var(--rule-2);
+  cursor: default;
+}
+
+.transport svg {
+  width: 14px;
+  height: 14px;
+  fill: currentColor;
+}
+
+.transport .play {
+  width: 46px;
+  background: var(--ink);
+  color: var(--paper);
+}
+
+.transport .play:hover:not(:disabled) {
+  border-color: var(--blue);
+  background: var(--blue);
+}
+
+.transport .speed {
+  width: auto;
+  min-width: 44px;
+  margin-left: auto;
+  padding: 0 8px;
+  font: 500 12px var(--mono);
+}
+
+.narration {
+  margin-top: 16px;
+}
+
+.narration h2 {
+  margin: 0 0 4px;
+  font: 500 12px var(--mono);
+  color: var(--blue);
+  animation: fade 0.25s ease-out both;
+}
+
+.narration p {
+  margin: 0;
+  font-size: 16.5px;
+  line-height: 1.5;
+  animation: fade 0.3s ease-out both;
+}
+
+/* Scrubber: a hairline with phase and byte ticks; the thumb is a small square. */
+.scrub {
+  position: relative;
+  margin-top: 10px;
+}
+
+.ticks {
+  position: absolute;
+  inset: 0 6px;
+  pointer-events: none;
+}
+
+.tick {
+  position: absolute;
+  top: 50%;
+  width: 1px;
+  height: 7px;
+  background: var(--rule-2);
+  transform: translate(-50%, -50%);
+}
+
+.tick.phase {
+  height: 15px;
+  background: var(--ink);
+}
+
+.scrub input {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 26px;
+  margin: 0;
+  background: transparent;
+  -webkit-appearance: none;
+  appearance: none;
+  cursor: pointer;
+}
+
+.scrub input::-webkit-slider-runnable-track {
+  height: 2px;
+  background: linear-gradient(to right, var(--blue) var(--progress, 0%), var(--rule-2) var(--progress, 0%));
+}
+
+.scrub input::-moz-range-track {
+  height: 2px;
+  background: linear-gradient(to right, var(--blue) var(--progress, 0%), var(--rule-2) var(--progress, 0%));
+}
+
+.scrub input::-webkit-slider-thumb {
+  width: 12px;
+  height: 12px;
+  margin-top: -5px;
+  border: 0;
+  border-radius: 0;
+  background: var(--blue);
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.scrub input::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border: 0;
+  border-radius: 0;
+  background: var(--blue);
+}
+
+.scrub-tag {
+  position: absolute;
+  bottom: calc(100% + 4px);
+  padding: 3px 7px;
+  background: var(--ink);
+  font: 400 11px/1.3 var(--mono);
+  color: var(--paper);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* ---------- Colophon ---------- */
+
+.colophon {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px 24px;
+  margin-top: 24px;
+  padding: 16px 0 36px;
+  border-top: 1px solid var(--rule-2);
+  font: 400 12px/1.5 var(--mono);
+  color: var(--muted);
+}
+
+/* ---------- Pointer (see Cursor.tsx) ---------- */
+
+html.custom-cursor,
+html.custom-cursor * {
+  cursor: none;
+}
+
+html.custom-cursor :is(input:not([type="range"]), textarea) {
+  cursor: text;
+}
+
+.cursor {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 200;
+  width: 0;
+  height: 0;
+  opacity: 0;
+  pointer-events: none;
+  transform-origin: 0 0;
+  transition: opacity 0.2s;
+  will-change: transform;
+}
+
+.cursor svg {
+  position: absolute;
+  top: -1px;
+  left: -8px;
+  width: 16px;
+  height: 20px;
+  fill: var(--ink);
+  stroke: var(--paper);
+  stroke-width: 1.4px;
+  stroke-linejoin: round;
+  overflow: visible;
+}
+
+.cursor-tag {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 200;
+  padding: 3px 8px;
+  background: var(--blue);
+  font: 500 11px/1.35 var(--mono);
+  color: var(--paper);
+  white-space: nowrap;
+  opacity: 0;
+  scale: 0.85;
+  transform-origin: 0 0;
+  pointer-events: none;
+  transition: opacity 0.18s, scale 0.22s var(--ease);
+}
+
+.cursor-tag.on {
+  opacity: 1;
+  scale: 1;
+}
+
+html.cursor-in .cursor {
+  opacity: 1;
+}
+
+html:not(.cursor-in) .cursor-tag,
+html.cursor-text .cursor,
+html.cursor-text .cursor-tag {
+  opacity: 0;
+}
+
+/* ---------- Narrower screens ---------- */
+
+@media (max-width: 1080px) {
+  .stage {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* The step card moves above the figures and scrolls with the page. */
+  .stage-side {
+    position: static;
+    order: -1;
+  }
+}
+
+@media (max-width: 760px) {
+  :root {
+    --cell: 24px;
+    --mcell: 20px;
+  }
+
+  .page {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .masthead {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 18px;
+    padding-top: 28px;
+  }
+
+  .masthead h1 {
+    font-size: 38px;
+  }
+
+  .masthead h1 span {
+    display: block;
+    margin: 6px 0 0;
+    font-size: 19px;
+  }
+
+  .inputs {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 18px;
+  }
+
+  .inputs > .btn {
+    margin-top: 0;
+    justify-self: start;
+  }
+
+  .output {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .narration p {
+    font-size: 15.5px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
+    transition-duration: 1ms !important;
+  }
+}
