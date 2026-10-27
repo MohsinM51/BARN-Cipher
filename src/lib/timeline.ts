@@ -9,7 +9,7 @@
  * Encryption: message → random stream → one step per bit → cipher.
  * Decryption: cipher → one step per bit → plaintext.
  */
-import { decodeBits, decrypt, encrypt, type Bit, type EncodedChar, type Key } from "./barn.ts";
+import { bitsToBytes, decodeBits, decrypt, encrypt, type Bit, type EncodedChar, type Key } from "./barn.ts";
 
 export type Mode = "encrypt" | "decrypt";
 export type Phase = "message" | "stream" | "bury" | "cipher" | "read" | "plaintext";
@@ -214,13 +214,20 @@ export function describe(run: Run, frame: Frame): { title: string; text: string 
             `${quote(run.text)} is ${plural(run.bytes.length, "byte")} of UTF-8, so μ = ${mu} bits. ` +
             `With K = ${keyText(run.key)} they need a stream of ${length} random bits.`,
         };
-      case "stream":
+      case "stream": {
+        // randomBits() asks for whole bytes and unpacks each into 8 bits, most significant first.
+        const total = Math.ceil(length / 8);
+        const sample = bitsToBytes(run.random).slice(0, 4).map((b) => hex(b).slice(2));
+        const spare = total * 8 - length;
         return {
           title: "Random stream P",
           text:
-            `${length} random bits from the browser's cryptographic generator, standing in for the ` +
-            `paper's hardware TRNG. Next, message bits replace ${mu} of them.`,
+            `crypto.getRandomValues(), the browser's cryptographic generator, returns ${plural(total, "random byte")} ` +
+            `(${sample.join(" ")}${total > sample.length ? " …" : ""}). Each is unpacked into 8 bits, most significant first` +
+            `${spare ? `, and the last ${spare} are dropped` : ""}, giving the ${length} bits of P. The operating system seeds ` +
+            `that generator from hardware noise; the paper uses a true hardware RNG instead.`,
         };
+      }
       case "bury": {
         const { j, k, skip, to } = h!;
         const bit = run.bits[j];

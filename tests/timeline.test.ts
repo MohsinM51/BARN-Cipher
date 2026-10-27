@@ -165,6 +165,15 @@ describe("narration", () => {
     assert.match(say(enc, 2).text, /Skip K₁ = 1 from the start to position 1\./);
   });
 
+  test("explains where the random bits come from, with the actual bytes", () => {
+    // 70 bits need 9 bytes; the last 2 bits of the 9th are dropped.
+    const first = Timeline.hex(BARN.bitsToBytes(enc.random)[0]).slice(2);
+    const { text } = say(enc, 1);
+    assert.match(text, /crypto\.getRandomValues\(\)/);
+    assert.match(text, new RegExp(`returns 9 random bytes \\(${first} `));
+    assert.match(text, /the last 2 are dropped, giving the 70 bits of P/);
+  });
+
   test("says whether the random bit had to change", () => {
     for (let n = 2; n < enc.lastStep; n++) {
       const { hop } = frame(enc, n);
