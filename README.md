@@ -52,6 +52,28 @@ message bits would land on the same stream bit), and the key can't be all 1s
 random bits in base 3, 4, 8, 10 or 16; the "draw one from 32 random bits"
 links next to the key field do exactly that.
 
+## Where the random bits come from
+
+BARN's security rests on the stream P being truly unpredictable. The paper
+gets it from a hardware true random number generator (TRNG), which measures
+a physical process. A web page can't reach one directly, so this project uses
+the closest thing it has:
+
+1. `randomBits(n)` in `src/lib/barn.ts` asks for ⌈n / 8⌉ bytes from
+   `crypto.getRandomValues()`, the browser's cryptographically secure random
+   number generator. The operating system seeds that generator from hardware
+   noise, such as interrupt timing and the CPU's own random-number
+   instruction.
+2. Each byte is unpacked into 8 bits, most significant bit first, and the
+   first n bits become P. Any spare bits from the last byte are dropped.
+3. Nothing is seeded or repeated: every encryption, including pressing
+   Encrypt again on the same text, draws a fresh stream. Key generation uses
+   the same source.
+
+The visualiser shows this at the "Random stream P" step. Each group of eight
+cells in Fig. 3 is one of those random bytes, its value is printed underneath,
+and the narration lists the actual bytes drawn.
+
 ## Running it
 
 You need [Node.js](https://nodejs.org) 22.18 or newer.
@@ -94,9 +116,12 @@ holds. Try a different key to see what a wrong guess produces, as in the
 paper's Fig. 4. The page flags keys that don't fit the cipher or don't give
 whole bytes.
 
-**Controls.** Play, pause and step from the player at the bottom, or drag the
-scrubber; hover it to see what each step does. Point at any bit in Fig. 3 to
-highlight its partner in Fig. 1, and the reverse.
+**Controls.** The step card in the margin beside the figures (above them on
+narrower screens) has play, pause, step, jump and speed controls, a scrubber
+with a mark for each phase and byte, and the narration. Hover the scrubber to
+see what each step does. Point at any bit and the pointer's label names it,
+for example `P₁₄ = M₈ · K₄ = 1`, while its partner in the other figure lights
+up.
 
 | Key       | Action                 |
 | --------- | ---------------------- |
@@ -104,7 +129,12 @@ highlight its partner in Fig. 1, and the reverse.
 | ← / →     | Previous / next step   |
 | Home, End | Jump to start / end    |
 
-Animations are skipped if your system asks for reduced motion.
+With a mouse or trackpad, the pointer is an ink arrow that turns toward
+where it's heading, and the dotted paper swells under it. Both are written
+for this project, inspired by React Bits' Gyroscope Cursor and User Cursor and
+by the interactive dot grids of Rob Crocker and sathishk-dev. Touch screens
+keep the normal behaviour, and all animation is skipped if your system asks
+for reduced motion.
 
 ## How the code is organised
 
@@ -113,13 +143,16 @@ index.html                Vite entry point
 src/
   lib/barn.ts             The cipher: Algorithm 1, Eq. (1), parsing, UTF-8, keys (Sec. 3)
   lib/timeline.ts         Splits an encryption or decryption into steps; narration
-  useCipher.ts            Form fields, validation and playback, one reducer per mode
+  lib/player.ts           Form checks and the playback reducer
+  useCipher.ts            React hook wiring player.ts to the page, one per mode
   animation.ts            Step animations (Web Animations API)
-  components/             Masthead, Inputs, the three figures, Output, Player
+  components/             Masthead, Inputs, the three figures, Output, Player (step card),
+                          Cursor and DotGrid
   styles.css
 tests/
   barn.test.ts            The cipher
   timeline.test.ts        The step model and narration
+  player.test.ts          Form checks and playback
 ```
 
 `src/lib` has no React or DOM code, so it can be tested on its own. Every
@@ -133,7 +166,7 @@ playing, scrubbing and stepping backwards always agree with one another.
 npm test
 ```
 
-80 tests run on Node's built-in test runner (no test dependencies). They cover:
+94 tests run on Node's built-in test runner (no test dependencies). They cover:
 
 - **The paper's worked example:** burying Fig. 2 in Fig. 1 gives exactly
   Fig. 3, at positions 1, 4, 6, 7, 8, 11, 13, 14, 15 and 18, in 18 bits, with
@@ -157,16 +190,19 @@ npm test
 - **The step model:** a 2000-move random walk of next/previous/scrub checks
   every step against a from-scratch reconstruction, including v1's failing
   sequence (three reads, one Previous, then on to the end).
+- **Form checks and playback:** size limits measured in UTF-8 bytes, a 1 MB
+  paste rejected quickly, the key and stream caps, 2000 random inputs that
+  must never throw, and playback that stops exactly on the last step.
 
 ## Notes and limits
 
-- The paper assumes a hardware random number generator. A web page has no
-  direct access to one, so the stream comes from the browser's cryptographic
-  generator (`crypto.getRandomValues`). It's never a fixed seed, so every run
-  differs.
-- To keep the figure readable the page accepts up to 64 bytes of text, skips
-  up to 255 and streams up to 4096 bits. The functions in `src/lib` have no
-  such limits apart from the skip size.
+- The random stream comes from the browser's cryptographic generator rather
+  than the paper's hardware TRNG; see
+  [Where the random bits come from](#where-the-random-bits-come-from).
+- To keep the figure readable the page accepts up to 64 bytes of text, keys
+  of up to 512 elements with skips up to 255, and streams up to 4096 bits.
+  The cipher functions in `src/lib/barn.ts` have no limits apart from the
+  skip size.
 - This is a teaching tool, not a vetted cryptosystem. Don't use it to protect
   real secrets.
 
@@ -178,3 +214,7 @@ npm test
   buried or read bits twice. The cipher box showed the raw random stream
   until the last step, and every run used the same fixed-seed stream.
   v2 fixes all of these by design.
+
+---
+
+Made by Mohsin Mohamed.
